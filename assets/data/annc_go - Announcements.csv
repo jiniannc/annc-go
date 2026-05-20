@@ -1,0 +1,24 @@
+Phase,PhaseID,Order,Title,Content_KO,Content_EN,Condition_Tag
+Preparation for Departure,R01,10,목적지 편명 안내,"손님 여러분, {City_KO}까지 가는 진에어 {flight_no}편, 잠시 후에 출발하겠습니다.","Dear passengers, this is Jinair flight {flight_no} bound for {City_EN}.
+We will be departing shortly.",None
+Preparation for Departure,R01,20,짐 보관 안내,"가져오신 짐은 앞좌석 아래나 선반 속에 보관해 주시고, 깨지기 쉬운 물건이나 액체류는 좌석 하단에 넣어 주시기 바랍니다.","Please stow your carry-on items in the overhead bins or under the seat in front of you. Especially, fragile objects or liquids must be stored under the seat.",None
+Preparation for Departure,R01,30,기내 반입 특수 아이템 안내1 ,"특히, 라이터, 전자담배, 보조배터리는 선반 속에 보관할 수 없으며, 사용 및 충전이 금지되어 있습니다.","Also, lighters, electronic cigarettes, and power banks must not be used or charged, and cannot be stored in the overhead bins.",None
+Preparation for Departure,R01,40,기내 반입 특수 아이템 안내2,"이 물품들이 좌석 틈새로 빠지거나, 혹은 보조배터리의 단락 방지 조치가 필요한 경우 승무원에게 말씀해 주시기 바랍니다.
+고맙습니다.","If they fall between the seats, or if a short-circuit prevention measure is required, please notify our cabin crew.
+Thank you.",None
+Door Close,R02,10,목적지 편명 안내,"손님 여러분, 이 비행기는 {City_KO}까지 가는 진에어 {flight_no}편입니다.","Dear passengers, this is Jinair flight {flight_no} bound for {City_EN}.",None
+Door Close,R02,20,출입문 Close 안내,곧 출입문 닫겠습니다. (곧 출발하겠습니다.),We will close the door shortly. (We will be departing shortly.),None
+Welcome,R03,10,환영 인사 (기본),"Fly, better fly.
+진에어에 탑승하신 손님 여러분, 안녕하십니까? [인사]
+저희 승무원들은 여러분의 탑승을 진심으로 환영합니다.","Good morning (afternoon/evening), everyone.
+Welcome aboard Jinair.",None
+Welcome,R03,20,환영 인사 (편명),이 비행기는 {City_KO}까지 가는 진에어 {flight_no}편입니다.,This is flight {flight_no} bound for {City_EN}.,is_NotCodeshare
+Welcome,R03,20,공동운항 문구,이 비행기는 {City_KO}까지 가는 진에어 {flight_no}편이며 대한항공과 공동운항하고 있습니다.,"This is flight {flight_no} bound for {City_EN}, code-sharing with Korean Air.",is_Codeshare
+Welcome,R03,40,지연 안내 문구,"오늘 {Delay_Reasons1} 출발이 예정보다 늦어진 점, 널리 양해해 주시기 바랍니다.","Today, we are delayed {Delay_Reasons1}.
+We thank you for your kind understanding.",is_Delayed
+Welcome,R03,50,목적지&비행시간 안내,목적지인 {City_KO}까지 예정된 비행시간은 이륙 후 {flight_time_KO]입니다.,Our flight time to {City_EN} today will be {flight_time_EN] after take-off.,None
+Welcome,R03,60,안전 관련 안내,"출발을 위해 좌석벨트를 매주시고 등받이와 {footrest}, 테이블을 제자리로 해주세요. 또한, 휴대용 전자기기는 비행기 모드로 바꿔 사용하실 수 있으며, 창문 덮개는 {window_state} 두시기 바랍니다.","To prepare for departure, please fasten your seatbelt and return your seat, {footrest} and tray table to the upright position. Also, please {window_state} your window shades, and set your electronic devices in ‘Airplane Mode’.",None
+Welcome,R03,70,군사공항 안내,이곳은 군사공항으로 촬영이 금지됨을 알려드립니다.,"Due to military regulations, taking pictures of this airport is not permitted.",is_Military
+Welcome,R03,80,괌/미주 승객군집,"아울러, 비행기 운항 중에는 보안상 여러 승객이 한 곳에 모여있지 않도록 되어 있으니 협조해 주십시오.","For security reasons, we ask you not to congregate in the cabin.",is_Guam
+Welcome,R03,90,끝 인사,"진에어와 함께 안전하고 편안한 여행하시길 바랍니다.
+고맙습니다.",Thank you.,None

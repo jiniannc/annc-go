@@ -1,0 +1,2 @@
+ControlKey,PhaseID,Type,Label_KO,Label_EN,DefaultValue,Options,Order,Visible_When
+seatbelt_sign,R04,toggle,좌석벨트 사인,Seatbelt Sign,on,on:ON|off:OFF,10,

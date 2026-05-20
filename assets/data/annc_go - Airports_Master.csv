@@ -1,0 +1,6 @@
+IATA_Code,City_KO,City_EN,Airport_KO,Airport_EN,is_Military,Time_Zone
+ICN,서울,Seoul,인천국제공항,Incheon Int'l Airport,FALSE,+9
+NRT,도쿄,Tokyo,나리타국제공항,Narita Int'l Airport,FALSE,+9
+PUS,부산,Busan,김해국제공항,Gimhae Int'l Airport,TRUE,+9
+KUV,군산,Gunsan,군산공항,Gunsan Airport,TRUE,+9
+GUM,괌,Guam,앤토니오 B. 원 팻 공항,Antonio B. Won Pat Int'l Airport,FALSE,+10

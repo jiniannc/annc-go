@@ -1,0 +1,4 @@
+HL_No (기번),Model (기종),has_Footrest,has_ISPS (전원),has_WiFi,Lifevest,Remarks
+HL7719,B737-900,TRUE,FALSE,FALSE,,-
+HL7218,B737-8,FALSE,TRUE,TRUE,,최신기재
+HL7798,B737-800,FALSE,FALSE,FALSE,,구형기재

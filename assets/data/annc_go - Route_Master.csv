@@ -1,0 +1,4 @@
+Route_ID,Route_Name,Phase_Sequence (쉼표로 구분),Remarks
+R_ICNNRT,인천-나리타,"P01, P02, P03",중거리 (국제선)
+R_ICNGUM,인천-괌,"P01, P02",중장거리 (국제선)
+R_GMPCJU,김포-제주,"P01, P03, P05",단거리 (국내선)
