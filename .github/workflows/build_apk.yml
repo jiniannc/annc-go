@@ -29,7 +29,15 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build apk --release
+      # pubspec의 x.y.z는 유지하고, +뒤 빌드 번호만 매 워크플로 실행마다 자동 증가합니다.
+      # (로컬 pubspec 수정 없이 테블릿에서도 GitHub 받은 빌드마다 버전 코드가 달라집니다.)
+      - name: Build APK (release, CI build number)
+        run: |
+          set -e
+          VERSION_FULL="$(grep '^version:' pubspec.yaml | head -1 | sed 's/^version:[[:space:]]*//' | tr -d '[:space:]')"
+          VERSION_NAME="${VERSION_FULL%+*}"
+          if [ -z "$VERSION_NAME" ]; then VERSION_NAME="1.0.0"; fi
+          flutter build apk --release --build-name="${VERSION_NAME}" --build-number="${GITHUB_RUN_NUMBER}"
 
       - uses: actions/upload-artifact@v4
         with:

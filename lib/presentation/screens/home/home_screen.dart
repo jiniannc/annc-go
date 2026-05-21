@@ -354,7 +354,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _announcementFullscreenEnterIcon(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final fg = cs.onSurface.withValues(alpha: 0.42);
+    // 밝은 글래스 카드 위에서도 확실히 보이도록(이전 0.42는 회색 카드와 구분 불가했다).
+    final fg = cs.onSurface.withValues(alpha: 0.72);
     return Tooltip(
       message: '전체 화면',
       child: IconButton(
@@ -373,7 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _announcementFullscreenExitIcon(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final fg = cs.onSurface.withValues(alpha: 0.42);
+    final fg = cs.onSurface.withValues(alpha: 0.72);
     return Tooltip(
       message: '전체 화면 끝',
       child: IconButton(

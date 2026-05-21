@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 릴리즈 빌드는 main만 병합되므로, 원격 동기화(http)용 권한은 여기에 있어야 함 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- connectivity_plus 등에서 연결 상태 감지에 쓰이는 경우가 많음 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <application
         android:label="annc_go"
         android:name="${applicationName}"
