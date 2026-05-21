@@ -13,7 +13,10 @@ import '../providers/flight_setup_provider.dart';
 import '../providers/situational_provider.dart';
 import 'inline_delay_reason_dropdown.dart';
 import 'announcement_script_block.dart'
-    show buildEmergencyKoEnMixedSegments, buildKoEnMixedSegmentRule, KoEnMixedSegment;
+    show
+        buildEmergencyKoEnMixedSegments,
+        buildKoEnMixedSegmentRule,
+        KoEnMixedSegment;
 import 'liquid_glass_card.dart';
 import 'pause_breath_inline.dart';
 import 'phase_guidance_inline.dart';
@@ -125,8 +128,7 @@ class _SituationalScriptCardState extends ConsumerState<SituationalScriptCard> {
     final hasContent = script.hasAnyContent;
     final timingGuides = splitGuidanceList(script.timing);
     final etcGuides = splitGuidanceList(script.etcNote);
-    final hasGuidance =
-        timingGuides.isNotEmpty || etcGuides.isNotEmpty;
+    final hasGuidance = timingGuides.isNotEmpty || etcGuides.isNotEmpty;
     final headerBottomFlat = widget.isExpanded && hasContent;
 
     // LiquidGlassCard 자체로 컨테이너를 만들고, 카테고리 accent를 살짝 띤
@@ -207,14 +209,20 @@ class _SituationalScriptCardState extends ConsumerState<SituationalScriptCard> {
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(cardRadius),
                   topRight: const Radius.circular(cardRadius),
-                  bottomLeft:
-                      headerBottomFlat ? Radius.zero : const Radius.circular(cardRadius),
-                  bottomRight:
-                      headerBottomFlat ? Radius.zero : const Radius.circular(cardRadius),
+                  bottomLeft: headerBottomFlat
+                      ? Radius.zero
+                      : const Radius.circular(cardRadius),
+                  bottomRight: headerBottomFlat
+                      ? Radius.zero
+                      : const Radius.circular(cardRadius),
                 ),
                 child: Padding(
-                  padding:
-                      EdgeInsets.fromLTRB(12, 9, 6, headerBottomFlat ? 6 : 10),
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    9,
+                    6,
+                    headerBottomFlat ? 6 : 10,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -222,9 +230,7 @@ class _SituationalScriptCardState extends ConsumerState<SituationalScriptCard> {
                         width: 3,
                         height: 30,
                         decoration: BoxDecoration(
-                          color: stripe.withValues(
-                            alpha: isDark ? 0.58 : 0.52,
-                          ),
+                          color: stripe.withValues(alpha: isDark ? 0.58 : 0.52),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -295,9 +301,10 @@ class _SituationalScriptCardState extends ConsumerState<SituationalScriptCard> {
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
                           if (!_showEnglish &&
-                              !script.hasRenderableContentEnForKoAlignedSections(
-                                _includeOptional,
-                              )) {
+                              !script
+                                  .hasRenderableContentEnForKoAlignedSections(
+                                    _includeOptional,
+                                  )) {
                             return;
                           }
                           HapticFeedback.selectionClick();
@@ -497,17 +504,10 @@ class _SituationalLinkZoneState extends State<_SituationalLinkZone>
                     final glow = 0.78 + 0.22 * (0.5 + 0.5 * math.sin(ph));
                     return Transform.translate(
                       offset: Offset(slide, 0),
-                      child: Opacity(
-                        opacity: glow,
-                        child: child,
-                      ),
+                      child: Opacity(opacity: glow, child: child),
                     );
                   },
-                  child: Icon(
-                    Icons.west_rounded,
-                    size: 15,
-                    color: backIcon,
-                  ),
+                  child: Icon(Icons.west_rounded, size: 15, color: backIcon),
                 ),
               ),
               const SizedBox(width: 8),
@@ -588,11 +588,7 @@ class _SituationalLinkLine extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: linkSub,
-                ),
+                Icon(Icons.chevron_right_rounded, size: 18, color: linkSub),
               ],
             ),
           ),
@@ -610,9 +606,7 @@ class _SituationalLinkLine extends StatelessWidget {
             child: Icon(
               Icons.link_off_rounded,
               size: 15,
-              color: isDark
-                  ? const Color(0xFFFF8A80)
-                  : const Color(0xFFB71C1C),
+              color: isDark ? const Color(0xFFFF8A80) : const Color(0xFFB71C1C),
             ),
           ),
           const SizedBox(width: 8),
@@ -641,10 +635,7 @@ class _SituationalLinkLine extends StatelessWidget {
 /// 더 강한 볼드로(Announcements 리스트 톤과 유사).
 /// 콜론 직후 공백은 시트 그대로 둔다(`trimLeft` 금지 — "출발 지연: General" 등).
 class _ScenarioHeaderTitle extends StatelessWidget {
-  const _ScenarioHeaderTitle({
-    required this.title,
-    required this.onSurface,
-  });
+  const _ScenarioHeaderTitle({required this.title, required this.onSurface});
 
   final String title;
   final Color onSurface;
@@ -753,17 +744,12 @@ List<InlineSpan> _spansForPlainWithBraces(
   var start = 0;
   for (final m in re.allMatches(text)) {
     if (m.start > start) {
-      out.addAll(
-        pauseBreathInlineSpans(text.substring(start, m.start), base),
-      );
+      out.addAll(pauseBreathInlineSpans(text.substring(start, m.start), base));
     }
     out.add(
       TextSpan(
         text: m.group(0),
-        style: base.copyWith(
-          color: pointColor,
-          fontWeight: FontWeight.w700,
-        ),
+        style: base.copyWith(color: pointColor, fontWeight: FontWeight.w700),
       ),
     );
     start = m.end;
@@ -796,20 +782,14 @@ List<InlineSpan> _situationalOptionValueSpans(
     }
     if (emStart > i) {
       out.addAll(
-        _spansForPlainWithBraces(
-          text.substring(i, emStart),
-          base,
-          pointColor,
-        ),
+        _spansForPlainWithBraces(text.substring(i, emStart), base, pointColor),
       );
     }
     final emEnd = text.indexOf(emE, emStart + emS.length);
     if (emEnd < 0) {
-      out.addAll(_spansForPlainWithBraces(
-        text.substring(emStart),
-        base,
-        pointColor,
-      ));
+      out.addAll(
+        _spansForPlainWithBraces(text.substring(emStart), base, pointColor),
+      );
       break;
     }
     final inner = text.substring(emStart + emS.length, emEnd);
@@ -817,10 +797,7 @@ List<InlineSpan> _situationalOptionValueSpans(
       out.add(
         TextSpan(
           text: inner,
-          style: base.copyWith(
-            color: pointColor,
-            fontWeight: FontWeight.w800,
-          ),
+          style: base.copyWith(color: pointColor, fontWeight: FontWeight.w800),
         ),
       );
     }
@@ -873,7 +850,7 @@ class _ScriptBody extends ConsumerWidget {
   final Map<String, SituationalOption> selected;
   final Map<int, bool> includeOptional;
   final void Function(int sectionIndex, String groupId, SituationalOption opt)
-      onSelect;
+  onSelect;
   final void Function(int sectionIndex, bool include) onIncludeOptional;
 
   @override
@@ -908,7 +885,10 @@ class _ScriptBody extends ConsumerWidget {
     final delayForFormat =
         selectedDelay ?? (delayReasons.isNotEmpty ? delayReasons.first : null);
 
-    String applyFlightTemplate(String template, {bool inlineDelaySlot = false}) {
+    String applyFlightTemplate(
+      String template, {
+      bool inlineDelaySlot = false,
+    }) {
       if (template.isEmpty) return template;
       if (setup == null) return template;
       return formatter.format(
@@ -923,10 +903,6 @@ class _ScriptBody extends ConsumerWidget {
       );
     }
 
-    final enInkDual = isDark
-        ? Color.lerp(mainReadable, const Color(0xFFC5D6F8), 0.32)!
-            .withValues(alpha: 0.96)
-        : const Color(0xFF1A3358).withValues(alpha: 0.94);
     final dualKoStyle = TextStyle(
       fontSize: 20,
       height: 1.65,
@@ -935,13 +911,15 @@ class _ScriptBody extends ConsumerWidget {
       color: mainReadable,
       fontStyle: FontStyle.normal,
     );
+
+    /// [bodyStyle] 의 영어 모드와 동일(이탤릭 등). 혼합 Content_KO 내 라틴 구간만 20px로 통일.
     final dualEnStyle = TextStyle(
       fontSize: 20,
-      height: 1.58,
-      fontWeight: FontWeight.w600,
-      letterSpacing: -0.05,
-      color: enInkDual,
-      fontStyle: FontStyle.normal,
+      height: 1.65,
+      fontWeight: FontWeight.w500,
+      letterSpacing: -0.28,
+      color: secondaryReadable,
+      fontStyle: FontStyle.italic,
     );
 
     final children = <Widget>[];
@@ -951,8 +929,9 @@ class _ScriptBody extends ConsumerWidget {
       final body = applyFlightTemplate(raw, inlineDelaySlot: true);
       if (body.trim().isEmpty && section.optionGroups.isEmpty) continue;
 
-      final dualSegs =
-          !showEnglish ? buildEmergencyKoEnMixedSegments(body) : null;
+      final dualSegs = !showEnglish
+          ? buildEmergencyKoEnMixedSegments(body)
+          : null;
 
       final Widget paragraph = dualSegs != null
           ? _SituationalKoEnMixedParagraphColumn(
@@ -1041,6 +1020,7 @@ class _FormattedBodyRichParagraph extends ConsumerWidget {
 
   final SituationalSection section;
   final int sectionIndex;
+
   /// 옵션 칩 레이블 — 전역 EN 표시 여부와 동일하게 두는 게 일반적.
   final bool optionShowEnglish;
   final bool delayDropdownEnglishLabels;
@@ -1049,9 +1029,9 @@ class _FormattedBodyRichParagraph extends ConsumerWidget {
   final TextStyle textStyle;
   final Map<String, SituationalOption> selected;
   final String Function(String template, {bool inlineDelaySlot})
-      applyFlightTemplate;
+  applyFlightTemplate;
   final void Function(int sectionIndex, String groupId, SituationalOption opt)
-      onSelect;
+  onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1084,8 +1064,8 @@ class _FormattedBodyRichParagraph extends ConsumerWidget {
 
     DelayReasonModel? effectiveDelay;
     if (delayReasons.isNotEmpty) {
-      effectiveDelay = selectedDelay != null &&
-              delayReasons.contains(selectedDelay)
+      effectiveDelay =
+          selectedDelay != null && delayReasons.contains(selectedDelay)
           ? selectedDelay
           : delayReasons.first;
     }
@@ -1134,10 +1114,7 @@ class _FormattedBodyRichParagraph extends ConsumerWidget {
 
       if (candDelay == none && candOpt == none) {
         spans.addAll(
-          _situationalEmphasisInlineSpans(
-            body.substring(cursor),
-            textStyle,
-          ),
+          _situationalEmphasisInlineSpans(body.substring(cursor), textStyle),
         );
         break;
       }
@@ -1245,9 +1222,9 @@ class _SituationalKoEnMixedParagraphColumn extends StatelessWidget {
   final Color accent;
   final Map<String, SituationalOption> selected;
   final String Function(String template, {bool inlineDelaySlot})
-      applyFlightTemplate;
+  applyFlightTemplate;
   final void Function(int sectionIndex, String groupId, SituationalOption opt)
-      onSelect;
+  onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -1295,12 +1272,13 @@ class _SectionParagraph extends ConsumerWidget {
   final Color accent;
   final TextStyle textStyle;
   final Map<String, SituationalOption> selected;
+
   /// {origin_airport_ko} 등: 본문 템플릿([inlineDelaySlot]==true)은 지연사유 센티넬 허용,
   /// 옵션 칩 레이블에서는 false(기본)로 치환문만 반영.
   final String Function(String template, {bool inlineDelaySlot})
-      applyFlightTemplate;
+  applyFlightTemplate;
   final void Function(int sectionIndex, String groupId, SituationalOption opt)
-      onSelect;
+  onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1366,7 +1344,10 @@ class _OptionalSectionShell extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: a.withValues(alpha: isDark ? 0.09 : 0.07),
                       borderRadius: BorderRadius.circular(6),
@@ -1377,8 +1358,10 @@ class _OptionalSectionShell extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: isDark
-                            ? _situationalReadableAccent(context, a)
-                                .withValues(alpha: 0.72)
+                            ? _situationalReadableAccent(
+                                context,
+                                a,
+                              ).withValues(alpha: 0.72)
                             : a.withValues(alpha: 0.58),
                         letterSpacing: -0.05,
                       ),
@@ -1392,7 +1375,9 @@ class _OptionalSectionShell extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12.8,
                           fontWeight: FontWeight.w500,
-                          color: onSurface.withValues(alpha: isDark ? 0.66 : 0.52),
+                          color: onSurface.withValues(
+                            alpha: isDark ? 0.66 : 0.52,
+                          ),
                           letterSpacing: -0.15,
                           height: 1.2,
                         ),
@@ -1454,7 +1439,7 @@ class _InlineOptionTrigger extends StatefulWidget {
   final Color accent;
   final TextStyle textStyle;
   final String Function(String template, {bool inlineDelaySlot})
-      applyFlightTemplate;
+  applyFlightTemplate;
   final ValueChanged<SituationalOption> onChanged;
 
   @override
@@ -1534,8 +1519,10 @@ class _InlineOptionTriggerState extends State<_InlineOptionTrigger> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: _situationalReadableAccent(context, widget.accent)
-                .withValues(alpha: 0.35),
+            color: _situationalReadableAccent(
+              context,
+              widget.accent,
+            ).withValues(alpha: 0.35),
           ),
         ),
         onOpened: () {
@@ -1618,6 +1605,7 @@ class _OptionChip extends StatelessWidget {
   final String label;
   final Color accent;
   final TextStyle textStyle;
+
   /// 치환 강조·`{key}` — 본문 네이비 볼드와 구분되는 포인트.
   final Color pointColor;
   final bool showCaret;
@@ -1634,7 +1622,8 @@ class _OptionChip extends StatelessWidget {
         final baseSize = textStyle.fontSize ?? 19;
         // RichText의 WidgetSpan이 남은 줄 너비를 넘겨줄 때 intrinsic 높이와
         // 실제 줄바꿈 너비를 맞추기 위해 우선 부모 maxWidth를 쓴다.
-        final maxChipW = (constraints.hasBoundedWidth &&
+        final maxChipW =
+            (constraints.hasBoundedWidth &&
                 constraints.maxWidth.isFinite &&
                 constraints.maxWidth > 0)
             ? constraints.maxWidth.clamp(80.0, 900.0)
@@ -1668,10 +1657,7 @@ class _OptionChip extends StatelessWidget {
                 ),
               ),
               if (showCaret)
-                Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: caret,
-                ),
+                Padding(padding: const EdgeInsets.only(left: 6), child: caret),
             ],
           ),
         );
@@ -1692,11 +1678,7 @@ class _OptionChip extends StatelessWidget {
             : Material(
                 color: Colors.transparent,
                 borderRadius: radius,
-                child: InkWell(
-                  onTap: onTap,
-                  borderRadius: radius,
-                  child: chip,
-                ),
+                child: InkWell(onTap: onTap, borderRadius: radius, child: chip),
               );
 
         // 본문 줄과의 baseline 어긋남을 줄이기 위한 소폭 보정(과도한 하단 여백 없음).
@@ -1786,15 +1768,15 @@ class _OptionPickerDialogState extends State<_OptionPickerDialog> {
     final filtered = q.isEmpty
         ? filteredByGroup
         : filteredByGroup
-            .where((o) =>
-                o.contentKo.toLowerCase().contains(q) ||
-                o.contentEn.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (o) =>
+                    o.contentKo.toLowerCase().contains(q) ||
+                    o.contentEn.toLowerCase().contains(q),
+              )
+              .toList();
 
     final maxH = (mq.size.height * 0.75).clamp(300.0, 680.0);
-    final surface = isDark
-        ? const Color(0xFF1C2430)
-        : Colors.white;
+    final surface = isDark ? const Color(0xFF1C2430) : Colors.white;
     final fillSoft = isDark
         ? Colors.white.withValues(alpha: 0.06)
         : UiConstants.navyInk.withValues(alpha: 0.05);
@@ -1832,9 +1814,7 @@ class _OptionPickerDialogState extends State<_OptionPickerDialog> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: isDark
-                                    ? onSurface
-                                    : UiConstants.navyInk,
+                                color: isDark ? onSurface : UiConstants.navyInk,
                                 letterSpacing: -0.4,
                                 height: 1.2,
                               ),
@@ -1943,29 +1923,22 @@ class _OptionPickerDialogState extends State<_OptionPickerDialog> {
                             ),
                           )
                         : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(
-                              12,
-                              4,
-                              12,
-                              20,
-                            ),
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
                             itemCount: filtered.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: 2),
                             itemBuilder: (_, i) {
                               final o = filtered[i];
-                              final isSelected = widget.selected != null &&
-                                  widget.selected!.contentKo ==
-                                      o.contentKo &&
-                                  widget.selected!.contentEn ==
-                                      o.contentEn;
+                              final isSelected =
+                                  widget.selected != null &&
+                                  widget.selected!.contentKo == o.contentKo &&
+                                  widget.selected!.contentEn == o.contentEn;
                               final secondaryRaw = widget.showEnglish
                                   ? o.contentKo
                                   : o.contentEn;
-                              final secondary =
-                                  secondaryRaw.trim().isEmpty
-                                      ? null
-                                      : widget.formatLine(secondaryRaw.trim());
+                              final secondary = secondaryRaw.trim().isEmpty
+                                  ? null
+                                  : widget.formatLine(secondaryRaw.trim());
                               return _SheetOptionRow(
                                 primary: _label(o),
                                 secondary: secondary,
@@ -2032,8 +2005,8 @@ class _SheetGroupChip extends StatelessWidget {
     final bg = active
         ? accent.withValues(alpha: isDark ? 0.18 : 0.12)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : UiConstants.navyInk.withValues(alpha: 0.05));
+              ? Colors.white.withValues(alpha: 0.06)
+              : UiConstants.navyInk.withValues(alpha: 0.05));
     final fg = active
         ? (isDark ? const Color(0xFFB4C8F0) : accent)
         : onSurface.withValues(alpha: 0.72);
@@ -2096,8 +2069,8 @@ class _SheetOptionRow extends StatelessWidget {
     final rowBg = isSelected
         ? accent.withValues(alpha: isDark ? 0.16 : 0.08)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.02)
-            : UiConstants.navyInk.withValues(alpha: 0.02));
+              ? Colors.white.withValues(alpha: 0.02)
+              : UiConstants.navyInk.withValues(alpha: 0.02));
     final lead = isSelected
         ? Icon(Icons.check_circle_rounded, size: 22, color: point)
         : Icon(
@@ -2117,10 +2090,7 @@ class _SheetOptionRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: lead,
-              ),
+              Padding(padding: const EdgeInsets.only(top: 1), child: lead),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -2134,8 +2104,9 @@ class _SheetOptionRow extends StatelessWidget {
                         color: onSurface.withValues(
                           alpha: isSelected ? 1.0 : 0.9,
                         ),
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         letterSpacing: -0.12,
                       ),
                       pointColor: point,

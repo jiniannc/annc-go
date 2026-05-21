@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 릴리즈 빌드는 main만 병합되므로, 원격 동기화(http)용 권한은 여기에 있어야 함 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="annc_go"
         android:name="${applicationName}"

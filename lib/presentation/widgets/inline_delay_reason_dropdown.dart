@@ -41,6 +41,15 @@ class InlineDelayReasonDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 본문과 구분되는 인라인 칩 — primary 소량 블렌드.
+    final chipFill = Color.alphaBlend(
+      cs.primary.withValues(alpha: isDark ? 0.24 : 0.14),
+      cs.surfaceContainerHighest,
+    );
+    final iconColor = cs.onSurface.withValues(alpha: isDark ? 0.88 : 0.72);
+
     final menuStyle = textStyle.copyWith(fontWeight: FontWeight.w600);
 
     final labels = [for (final r in reasons) delayReasonLabel(r)];
@@ -50,7 +59,7 @@ class InlineDelayReasonDropdown extends StatelessWidget {
     final maxLabelW = widths.reduce(math.max);
     final selectedLabel = delayReasonLabel(value);
     final selectedW = _measureLabelWidth(context, selectedLabel, menuStyle);
-    const iconAndInlinePadding = 30.0;
+    const iconAndInlinePadding = 40.0; // 아이콘 크기↑에 맞춰 닫힌 상태 필요 너비(텍스트+아이콘 간격).
     final closedBarW = selectedW + iconAndInlinePadding;
 
     final screenW = MediaQuery.sizeOf(context).width;
@@ -68,57 +77,78 @@ class InlineDelayReasonDropdown extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 3),
       child: Material(
         color: Colors.transparent,
-        child: Theme(
-          data: Theme.of(
-            context,
-          ).copyWith(visualDensity: VisualDensity.compact),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: widthCap),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<DelayReasonModel>(
-                value: value,
-                isDense: true,
-                isExpanded: false,
-                menuWidth: menuW,
-                padding: const EdgeInsetsDirectional.only(start: 6, end: 0),
-                borderRadius: BorderRadius.circular(10),
-                icon: Icon(
-                  Icons.arrow_drop_down_rounded,
-                  size: 20,
-                  color: textStyle.color?.withValues(alpha: 0.85),
-                ),
-                style: menuStyle,
-                selectedItemBuilder: (ctx) {
-                  return reasons.map((r) {
-                    return Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: SizedBox(
-                        width: selectedW,
-                        child: Text(
-                          delayReasonLabel(r),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: chipFill,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.06),
+                blurRadius: isDark ? 14 : 10,
+                spreadRadius: isDark ? 0 : -0.5,
+                offset: const Offset(0, 2),
+              ),
+              BoxShadow(
+                color: const Color(
+                  0xFF64748B,
+                ).withValues(alpha: isDark ? 0.12 : 0.09),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Theme(
+            data: Theme.of(
+              context,
+            ).copyWith(visualDensity: VisualDensity.compact),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: widthCap),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<DelayReasonModel>(
+                  value: value,
+                  isDense: true,
+                  isExpanded: false,
+                  menuWidth: menuW,
+                  padding: const EdgeInsetsDirectional.only(start: 8, end: 2),
+                  borderRadius: BorderRadius.circular(10),
+                  icon: Icon(
+                    Icons.arrow_drop_down_rounded,
+                    size: 26,
+                    color: iconColor,
+                  ),
+                  style: menuStyle,
+                  selectedItemBuilder: (ctx) {
+                    return reasons.map((r) {
+                      return Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: SizedBox(
+                          width: selectedW,
+                          child: Text(
+                            delayReasonLabel(r),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                      );
+                    }).toList();
+                  },
+                  items: reasons.map((r) {
+                    final label = delayReasonLabel(r);
+                    return DropdownMenuItem<DelayReasonModel>(
+                      value: r,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     );
-                  }).toList();
-                },
-                items: reasons.map((r) {
-                  final label = delayReasonLabel(r);
-                  return DropdownMenuItem<DelayReasonModel>(
-                    value: r,
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-                onChanged: (next) {
-                  if (next != null) {
-                    onChanged(next);
-                  }
-                },
+                  }).toList(),
+                  onChanged: (next) {
+                    if (next != null) {
+                      onChanged(next);
+                    }
+                  },
+                ),
               ),
             ),
           ),

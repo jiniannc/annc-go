@@ -48,6 +48,8 @@ class AppTheme {
 
     return base.copyWith(
       colorScheme: colorScheme,
+      // 모달 시트별로 필요할 때만 `showDragHandle: true`로 켠다 (기본 false).
+      bottomSheetTheme: const BottomSheetThemeData(showDragHandle: false),
       scaffoldBackgroundColor: scaffoldColor,
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(

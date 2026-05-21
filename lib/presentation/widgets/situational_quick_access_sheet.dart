@@ -27,6 +27,7 @@ Future<void> showSituationalQuickAccessSheet(
     isDismissible: true,
     enableDrag: true,
     useSafeArea: false,
+    showDragHandle: false,
     sheetAnimationStyle: UiConstants.quickModalSheetAnimationStyle,
     builder: (sheetContext) {
       return _SituationalQuickAccessSheetBody(
@@ -195,22 +196,7 @@ class _SituationalQuickAccessSheetBodyState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 4),
-                          child: Center(
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
+                    Padding(
                           padding: const EdgeInsets.fromLTRB(
                             UiConstants.pagePadding,
                             8,
@@ -255,8 +241,8 @@ class _SituationalQuickAccessSheetBodyState
                               ),
                             ],
                           ),
-                        ),
-                        if (groups.isEmpty)
+                    ),
+                    if (groups.isEmpty)
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.all(
@@ -277,8 +263,8 @@ class _SituationalQuickAccessSheetBodyState
                               ),
                             ),
                           )
-                        else
-                          Expanded(
+                    else
+                      Expanded(
                             child: AnimatedSwitcher(
                               duration: const Duration(milliseconds: 240),
                               switchInCurve: Curves.easeOutCubic,

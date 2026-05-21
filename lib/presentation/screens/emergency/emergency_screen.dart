@@ -124,7 +124,6 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             top: false,
             child: Column(
               children: [
-                _SheetDragCue(isDark: isDark),
                 _buildHeaderRow(context, isDark),
                 const SizedBox(height: 10),
                 if (phases.isEmpty)
@@ -444,31 +443,6 @@ class _HorizontalDashPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HorizontalDashPainter oldDelegate) {
     return oldDelegate.color != color;
-  }
-}
-
-/// 허브·모달 공통 스타일의 상단 손잡이 느낌.
-class _SheetDragCue extends StatelessWidget {
-  const _SheetDragCue({required this.isDark});
-
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
-      child: Center(
-        child: Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: onSurface.withValues(alpha: isDark ? 0.22 : 0.16),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
   }
 }
 

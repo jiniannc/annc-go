@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Expanding‑Pill 마일스톤 바.
 ///
@@ -151,25 +150,20 @@ class _MilestoneBarState extends State<MilestoneBar> {
     if (hoverPhase == null || hoverPhase == _dragPreviewPhase) {
       return;
     }
-    HapticFeedback.selectionClick();
     setState(() {
       _dragPreviewPhase = hoverPhase;
     });
+    // 손을 뗄 때까지 기다리지 않고, 스크럽 중 즉시 상위에서 본문/페이지를 맞춘다.
+    widget.onSelect(hoverPhase);
   }
 
   void _handlePointerEnd(int pointer) {
     if (_trackingPointer != pointer) {
       return;
     }
-    final shouldCommit = _isScrubbing && _dragPreviewPhase != null;
-    final targetPhase = _dragPreviewPhase;
     _trackingPointer = null;
     _pointerDownPosition = null;
     _isScrubbing = false;
-
-    if (shouldCommit && targetPhase != null) {
-      widget.onSelect(targetPhase);
-    }
 
     if (mounted) {
       setState(() {
@@ -195,53 +189,58 @@ class _MilestoneBarState extends State<MilestoneBar> {
       onPointerCancel: (event) => _handlePointerEnd(event.pointer),
       child: SizedBox(
         height: 36,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < widget.milestones.length; i++) ...[
-                if (i > 0)
-                  Container(
-                    width: 14,
-                    height: 1.4,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          isDark
-                              ? Colors.white.withValues(alpha: 0.18)
-                              : const Color(0xFFC9D4E2),
-                          isDark
-                              ? Colors.white.withValues(alpha: 0.42)
-                              : const Color(0xFFB3C2D5),
-                          isDark
-                              ? Colors.white.withValues(alpha: 0.18)
-                              : const Color(0xFFC9D4E2),
-                        ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < widget.milestones.length; i++) ...[
+                      if (i > 0)
+                        Container(
+                          width: 14,
+                          height: 1.4,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                isDark
+                                    ? Colors.white.withValues(alpha: 0.18)
+                                    : const Color(0xFFC9D4E2),
+                                isDark
+                                    ? Colors.white.withValues(alpha: 0.42)
+                                    : const Color(0xFFB3C2D5),
+                                isDark
+                                    ? Colors.white.withValues(alpha: 0.18)
+                                    : const Color(0xFFC9D4E2),
+                              ],
+                            ),
+                          ),
+                        ),
+                      _MilestonePill(
+                        key: _itemKeys[i],
+                        label: widget.milestones[i],
+                        isActive: widget.milestones[i] == visualSelected,
+                        isDark: isDark,
+                        hasAudio: widget.audioReadyMilestones.contains(
+                          widget.milestones[i],
+                        ),
+                        onTap: () => widget.onSelect(widget.milestones[i]),
                       ),
-                    ),
-                  ),
-                _MilestonePill(
-                  key: _itemKeys[i],
-                  label: widget.milestones[i],
-                  isActive: widget.milestones[i] == visualSelected,
-                  isDark: isDark,
-                  hasAudio: widget.audioReadyMilestones.contains(
-                    widget.milestones[i],
-                  ),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    widget.onSelect(widget.milestones[i]);
-                  },
+                    ],
+                  ],
                 ),
-              ],
-            ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -264,7 +263,6 @@ class _MilestonePill extends StatelessWidget {
   final bool hasAudio;
   final VoidCallback onTap;
 
-  static const _accentGreen = Color(0xFF69B81B);
   static const _accentPastel = Color(0xFF67C88F);
   static const _dotSize = 9.0;
   static const _pillHeight = 26.0;

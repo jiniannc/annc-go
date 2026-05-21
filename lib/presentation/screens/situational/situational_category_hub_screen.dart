@@ -531,7 +531,6 @@ class _SituationalCategoryHubScreenState
                 bottom: false,
                 child: Column(
                   children: [
-                    _buildDragHandle(onSurface),
                     _buildHeader(pointAccent, onSurface),
                     const SizedBox(height: 7),
                     _buildSubTabs(subCategories, onSurface),
@@ -602,20 +601,6 @@ class _SituationalCategoryHubScreenState
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDragHandle(Color onSurface) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: onSurface.withValues(alpha: 0.22),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
     );
   }
 

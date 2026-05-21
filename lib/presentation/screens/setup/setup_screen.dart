@@ -372,6 +372,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // 모달 시트(bar) 바깥에서 이미 keyboard inset을 처리하므로,
+      // 여기서 재적용하면 이중 패딩으로 플로팅 버튼이 위로 뜬다.
+      resizeToAvoidBottomInset: false,
       body: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -710,7 +713,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   Widget _setupSheetHeader(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final handleColor = scheme.onSurface.withValues(alpha: 0.22);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         UiConstants.pagePadding,
@@ -721,17 +723,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: handleColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

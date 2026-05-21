@@ -410,19 +410,7 @@ class _TurbulenceScreenState extends ConsumerState<TurbulenceScreen>
                   top: false,
                   child: Column(
                     children: [
-                      // Drag-handle grabber — 시각적 힌트
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10, bottom: 4),
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black)
-                                .withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
+                      const SizedBox(height: 6),
                       _TurbulenceAppBar(
                         phase: _current,
                         isDark: isDark,

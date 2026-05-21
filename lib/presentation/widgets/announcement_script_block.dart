@@ -41,17 +41,15 @@ import 'pick_one_dashed_bridge.dart';
 // ---------------------------------------------------------------------------
 
 /// 본문 `{{WAITING_REASON}}` 등 — 영어처럼 보이지만 한·영 전환 구분선 용도로는 무시한다.
-final RegExp _koEnDetectIgnoreCurlyTokens =
-    RegExp(r'\{\{[A-Za-z][A-Za-z0-9_]*\}\}');
+final RegExp _koEnDetectIgnoreCurlyTokens = RegExp(
+  r'\{\{[A-Za-z][A-Za-z0-9_]*\}\}',
+);
 
 /// 토큰 제거 후 남은 텍스트로만 한글/라틴 판별.
 String _koEnDetectionCore(String line) =>
     line.replaceAll(_koEnDetectIgnoreCurlyTokens, '').trim();
 
-bool _emergencyLineIsLatinPrefer(
-  String line, {
-  bool? preferLatinFallback,
-}) {
+bool _emergencyLineIsLatinPrefer(String line, {bool? preferLatinFallback}) {
   final core = _koEnDetectionCore(line);
   if (core.isEmpty) {
     return preferLatinFallback ?? false;
@@ -93,8 +91,7 @@ _emergencyLineRunsAlternate(String body) {
     bufLatin = null;
     if (raw.isEmpty || savedLatin == null) return;
 
-    final needsDividerBefore =
-        deferDividerBeforeNextEmit && out.isNotEmpty;
+    final needsDividerBefore = deferDividerBeforeNextEmit && out.isNotEmpty;
 
     if (needsDividerBefore) {
       deferDividerBeforeNextEmit = false;
@@ -114,8 +111,10 @@ _emergencyLineRunsAlternate(String body) {
       continue;
     }
 
-    final lineLatin =
-        _emergencyLineIsLatinPrefer(trimmed, preferLatinFallback: bufLatin);
+    final lineLatin = _emergencyLineIsLatinPrefer(
+      trimmed,
+      preferLatinFallback: bufLatin,
+    );
 
     if (bufLatin != null &&
         buf.isNotEmpty &&
@@ -168,9 +167,7 @@ Widget buildKoEnMixedSegmentRule({required bool isDark}) {
           gradient: LinearGradient(
             colors: [
               Colors.transparent,
-              UiConstants.navyMuted.withValues(
-                alpha: isDark ? 0.22 : 0.17,
-              ),
+              UiConstants.navyMuted.withValues(alpha: isDark ? 0.22 : 0.17),
               Colors.transparent,
             ],
           ),
@@ -297,9 +294,9 @@ Widget buildAnnouncementSegmentWidget(
   required Map<String, int?> inlineSelectionByScript,
   required ValueChanged<DelayReasonModel> onDelayReasonChanged,
   required void Function(TeleprompterScript script, int index)
-      onInlineOptionChangedForScript,
+  onInlineOptionChangedForScript,
   required void Function(TeleprompterScript script, int index)
-      onSpecialFarewellChangedForScript,
+  onSpecialFarewellChangedForScript,
   required VoidCallback onTimeRefresh,
   bool presentTitleInRequired = false,
   Color? requiredTitleAccent,
@@ -404,10 +401,10 @@ class AnnouncementSelectPickOneGroup extends StatefulWidget {
   final Map<String, int?> inlineSelectionByScript;
   final ValueChanged<DelayReasonModel> onDelayReasonChanged;
   final void Function(TeleprompterScript script, int index)
-      onInlineOptionChanged;
+  onInlineOptionChanged;
   final List<String> specialFarewellLabels;
   final void Function(TeleprompterScript script, int index)
-      onSpecialFarewellChanged;
+  onSpecialFarewellChanged;
   final VoidCallback onTimeRefresh;
 
   /// Required(필수) 카드에서 Title 을 본문 위에 굵은 헤더로 표시한다.
@@ -516,8 +513,8 @@ class _AnnouncementSelectPickOneGroupState
         showEnglish: widget.showEnglish,
         delayReasons: widget.delayReasons,
         selectedDelayReason: widget.selectedDelayReason,
-        inlineSelectedIndex: widget
-            .inlineSelectionByScript['${single.id}:${single.inlineKey}'],
+        inlineSelectedIndex:
+            widget.inlineSelectionByScript['${single.id}:${single.inlineKey}'],
         onDelayReasonChanged: widget.onDelayReasonChanged,
         onInlineOptionChanged: (index) =>
             widget.onInlineOptionChanged(single, index),
@@ -567,10 +564,7 @@ class _AnnouncementSelectPickOneGroupState
     final badgeGradientTop = isDark
         ? const Color(0xFF232D3C)
         : UiConstants.warmSurface;
-    final badgeGradientBottom = Color.alphaBlend(
-      optionalFillMid,
-      badgeFill,
-    );
+    final badgeGradientBottom = Color.alphaBlend(optionalFillMid, badgeFill);
 
     final optionalFillEdge = optionalFillMid.withValues(alpha: 0);
 
@@ -605,10 +599,7 @@ class _AnnouncementSelectPickOneGroupState
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              badgeGradientTop,
-              badgeGradientBottom,
-            ],
+            colors: [badgeGradientTop, badgeGradientBottom],
             stops: const [0.15, 1.0],
           ),
           borderRadius: BorderRadius.circular(999),
@@ -628,14 +619,14 @@ class _AnnouncementSelectPickOneGroupState
           child: Text(
             pickOneLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.12,
-                  height: 1.15,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.78)
-                      : UiConstants.navyMuted.withValues(alpha: 0.92),
-                ),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.12,
+              height: 1.15,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.78)
+                  : UiConstants.navyMuted.withValues(alpha: 0.92),
+            ),
           ),
         ),
       );
@@ -664,11 +655,16 @@ class _AnnouncementSelectPickOneGroupState
     final bridgeLabelAlpha = emergencyBoost ? 0.74 : 0.48;
 
     final outerTopPad = emergencyBoost ? 4.0 : 13.0;
-    final outerInnerPad =
-        EdgeInsets.fromLTRB(0, emergencyBoost ? 10 : 14, 0, emergencyBoost ? 14 : 16);
+    final outerInnerPad = EdgeInsets.fromLTRB(
+      0,
+      emergencyBoost ? 10 : 14,
+      0,
+      emergencyBoost ? 14 : 16,
+    );
 
     final bannerTitle = _emergencyBannerTitle(widget.scripts).trim();
-    final useSharedEmergencyBanner = emergencyBoost &&
+    final useSharedEmergencyBanner =
+        emergencyBoost &&
         widget.presentTitleInRequired &&
         bannerTitle.isNotEmpty;
 
@@ -680,15 +676,12 @@ class _AnnouncementSelectPickOneGroupState
             PickOneOrDashedBridge(
               ruleColor: optionalRuleColor,
               label: bridgeLabel,
-              labelStyle: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.06,
-                    color: mainReadable.withValues(alpha: bridgeLabelAlpha),
-                  ),
+              labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.06,
+                color: mainReadable.withValues(alpha: bridgeLabelAlpha),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -705,46 +698,33 @@ class _AnnouncementSelectPickOneGroupState
                 Expanded(
                   child: Builder(
                     builder: (context) {
-                      final hasTitle =
-                          filtered[i].title.trim().isNotEmpty;
+                      final hasTitle = filtered[i].title.trim().isNotEmpty;
                       return AnnouncementScriptBlock(
                         script: filtered[i],
                         showEnglish: widget.showEnglish,
                         delayReasons: widget.delayReasons,
-                        selectedDelayReason:
-                            widget.selectedDelayReason,
+                        selectedDelayReason: widget.selectedDelayReason,
                         inlineSelectedIndex: widget
-                                .inlineSelectionByScript[
-                            '${filtered[i].id}:${filtered[i].inlineKey}'],
-                        onDelayReasonChanged:
-                            widget.onDelayReasonChanged,
+                            .inlineSelectionByScript['${filtered[i].id}:${filtered[i].inlineKey}'],
+                        onDelayReasonChanged: widget.onDelayReasonChanged,
                         onInlineOptionChanged: (index) =>
-                            widget.onInlineOptionChanged(
-                                filtered[i], index),
-                        specialFarewellLabels:
-                            widget.specialFarewellLabels,
+                            widget.onInlineOptionChanged(filtered[i], index),
+                        specialFarewellLabels: widget.specialFarewellLabels,
                         specialFarewellSelectedIndex: widget
-                                .inlineSelectionByScript[
-                            '${filtered[i].id}:special_farewell'],
+                            .inlineSelectionByScript['${filtered[i].id}:special_farewell'],
                         onSpecialFarewellChanged: (index) =>
-                            widget.onSpecialFarewellChanged(
-                                filtered[i], index),
+                            widget.onSpecialFarewellChanged(filtered[i], index),
                         onTimeRefresh: widget.onTimeRefresh,
                         pickOneEmbedded: true,
                         pickOneAccordionExpanded: hasTitle
                             ? filtered[i].id == _expandedScriptId
                             : true,
                         pickOneAccordionHeaderTap: hasTitle
-                            ? () => _onAccordionHeaderTap(
-                                  filtered[i].id,
-                                )
+                            ? () => _onAccordionHeaderTap(filtered[i].id)
                             : null,
-                        presentTitleInRequired:
-                            widget.presentTitleInRequired,
-                        requiredTitleAccent:
-                            widget.requiredTitleAccent,
-                        emergencyPhaseLabel:
-                            widget.emergencyPhaseLabel,
+                        presentTitleInRequired: widget.presentTitleInRequired,
+                        requiredTitleAccent: widget.requiredTitleAccent,
+                        emergencyPhaseLabel: widget.emergencyPhaseLabel,
                         pickOneUsesSharedEmergencyBanner:
                             useSharedEmergencyBanner,
                       );
@@ -779,10 +759,7 @@ class _AnnouncementSelectPickOneGroupState
           const SizedBox(height: 10),
           DecoratedBox(
             decoration: stripDecoration,
-            child: Padding(
-              padding: outerInnerPad,
-              child: pickOneStripBody,
-            ),
+            child: Padding(padding: outerInnerPad, child: pickOneStripBody),
           ),
         ],
       );
@@ -795,10 +772,7 @@ class _AnnouncementSelectPickOneGroupState
           padding: EdgeInsets.only(top: outerTopPad),
           child: DecoratedBox(
             decoration: stripDecoration,
-            child: Padding(
-              padding: outerInnerPad,
-              child: pickOneStripBody,
-            ),
+            child: Padding(padding: outerInnerPad, child: pickOneStripBody),
           ),
         ),
         Positioned(
@@ -830,12 +804,12 @@ class _RoutinePickOneOrdinalOrb extends StatelessWidget {
         '$ordinal.',
         textAlign: TextAlign.right,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontSize: 11.25,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-              letterSpacing: -0.02,
-              color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
-            ),
+          fontSize: 11.25,
+          fontWeight: FontWeight.w600,
+          height: 1.35,
+          letterSpacing: -0.02,
+          color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
+        ),
       ),
     );
   }
@@ -873,8 +847,7 @@ List<InlineSpan> _spansWithResolvedVariableEmphasis(
   while (i < text.length) {
     final nextEmphasis = text.indexOf(emphasisStart, i);
     final nextFlight = text.indexOf(flightStart, i);
-    final candidates =
-        [nextEmphasis, nextFlight].where((v) => v >= 0).toList();
+    final candidates = [nextEmphasis, nextFlight].where((v) => v >= 0).toList();
     if (candidates.isEmpty) {
       appendPauseBreathSpans(
         out: out,
@@ -1041,6 +1014,14 @@ class _InlineScriptOptionDropdown extends StatelessWidget {
     if (labels.isEmpty) {
       return Text('…', style: textStyle);
     }
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final chipFill = Color.alphaBlend(
+      cs.primary.withValues(alpha: isDark ? 0.24 : 0.14),
+      cs.surfaceContainerHighest,
+    );
+    final iconColor = cs.onSurface.withValues(alpha: isDark ? 0.88 : 0.72);
+
     final menuStyle = textStyle.copyWith(fontWeight: FontWeight.w600);
     final widths = [
       for (final label in labels) _measureLabelWidth(context, label, menuStyle),
@@ -1049,7 +1030,7 @@ class _InlineScriptOptionDropdown extends StatelessWidget {
     final safeIndex = selectedIndex.clamp(0, labels.length - 1);
     final selectedLabel = labels[safeIndex];
     final selectedW = _measureLabelWidth(context, selectedLabel, menuStyle);
-    const iconAndInlinePadding = 30.0;
+    const iconAndInlinePadding = 40.0;
     final closedBarW = selectedW + iconAndInlinePadding;
 
     final screenW = MediaQuery.sizeOf(context).width;
@@ -1066,56 +1047,77 @@ class _InlineScriptOptionDropdown extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 3),
       child: Material(
         color: Colors.transparent,
-        child: Theme(
-          data: Theme.of(
-            context,
-          ).copyWith(visualDensity: VisualDensity.compact),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: widthCap),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: safeIndex,
-                isDense: true,
-                isExpanded: false,
-                menuWidth: menuW,
-                padding: const EdgeInsetsDirectional.only(start: 6, end: 0),
-                borderRadius: BorderRadius.circular(10),
-                icon: Icon(
-                  Icons.arrow_drop_down_rounded,
-                  size: 20,
-                  color: textStyle.color?.withValues(alpha: 0.85),
-                ),
-                style: menuStyle,
-                selectedItemBuilder: (ctx) {
-                  return List.generate(labels.length, (idx) {
-                    return Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: SizedBox(
-                        width: selectedW,
-                        child: Text(
-                          labels[idx],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: chipFill,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.06),
+                blurRadius: isDark ? 14 : 10,
+                spreadRadius: isDark ? 0 : -0.5,
+                offset: const Offset(0, 2),
+              ),
+              BoxShadow(
+                color: const Color(
+                  0xFF64748B,
+                ).withValues(alpha: isDark ? 0.12 : 0.09),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Theme(
+            data: Theme.of(
+              context,
+            ).copyWith(visualDensity: VisualDensity.compact),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: widthCap),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: safeIndex,
+                  isDense: true,
+                  isExpanded: false,
+                  menuWidth: menuW,
+                  padding: const EdgeInsetsDirectional.only(start: 8, end: 2),
+                  borderRadius: BorderRadius.circular(10),
+                  icon: Icon(
+                    Icons.arrow_drop_down_rounded,
+                    size: 26,
+                    color: iconColor,
+                  ),
+                  style: menuStyle,
+                  selectedItemBuilder: (ctx) {
+                    return List.generate(labels.length, (idx) {
+                      return Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: SizedBox(
+                          width: selectedW,
+                          child: Text(
+                            labels[idx],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
+                      );
+                    });
+                  },
+                  items: List.generate(labels.length, (idx) {
+                    return DropdownMenuItem<int>(
+                      value: idx,
+                      child: Text(
+                        labels[idx],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     );
-                  });
-                },
-                items: List.generate(labels.length, (idx) {
-                  return DropdownMenuItem<int>(
-                    value: idx,
-                    child: Text(
-                      labels[idx],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }),
-                onChanged: (next) {
-                  if (next != null) {
-                    onChanged(next);
-                  }
-                },
+                  }),
+                  onChanged: (next) {
+                    if (next != null) {
+                      onChanged(next);
+                    }
+                  },
+                ),
               ),
             ),
           ),
@@ -1203,8 +1205,9 @@ class _AnnouncementScriptBlockState
 
   bool get _accordionControlled => widget.pickOneAccordionHeaderTap != null;
 
-  bool get _effectiveOptionalExpanded =>
-      _accordionControlled ? widget.pickOneAccordionExpanded : _optionalExpanded;
+  bool get _effectiveOptionalExpanded => _accordionControlled
+      ? widget.pickOneAccordionExpanded
+      : _optionalExpanded;
 
   @override
   void initState() {
@@ -1263,11 +1266,9 @@ class _AnnouncementScriptBlockState
     final koRaw = script.ko;
     final enRaw = script.en;
     if (showEnglish) {
-      body =
-          enRaw.trim().isNotEmpty ? enRaw : koRaw;
+      body = enRaw.trim().isNotEmpty ? enRaw : koRaw;
     } else {
-      body =
-          koRaw.trim().isNotEmpty ? koRaw : enRaw;
+      body = koRaw.trim().isNotEmpty ? koRaw : enRaw;
     }
     if (body.trim().isEmpty) {
       return const SizedBox.shrink();
@@ -1277,8 +1278,9 @@ class _AnnouncementScriptBlockState
     // 한글 표시 모드: 본문이 한·영 혼합이면 분석 가능할 때만 Emergency 와 같은
     // 세그먼트 스타일을 쓴다. ( Etc 토큰 없이도 `buildEmergencyKoEnMixedSegments` 가
     // null 이 아니면 자동 적용 — 단락/줄 교대 규칙은 해당 함수와 동일.)
-    final koEnMixedSegments =
-        !showEnglish ? buildEmergencyKoEnMixedSegments(body) : null;
+    final koEnMixedSegments = !showEnglish
+        ? buildEmergencyKoEnMixedSegments(body)
+        : null;
 
     final bodyStyleKo = TextStyle(
       fontSize: 20,
@@ -1289,30 +1291,18 @@ class _AnnouncementScriptBlockState
       fontStyle: FontStyle.normal,
     );
 
-    final enInk = isDark
-        ? Color.lerp(mainReadable, const Color(0xFFC5D6F8), 0.32)!
-            .withValues(alpha: 0.96)
-        : const Color(0xFF1A3358).withValues(alpha: 0.94);
-
-    final bodyStyleEn = TextStyle(
-      fontSize: 20,
-      height: 1.58,
-      fontWeight: FontWeight.w600,
-      letterSpacing: -0.05,
-      color: enInk,
-      fontStyle: FontStyle.normal,
-    );
-
-    final bodyStyle = TextStyle(
+    /// Content_EN 전용 줄(영어 표시 모드 또는 Content_KO 내 라틴 구간)
+    /// — 혼합 본문의 영어 줄도 동일하게 맞춘다.
+    final bodyStyleContentEn = TextStyle(
       fontSize: 20,
       height: 1.65,
-      fontWeight: showEnglish
-          ? FontWeight.w500
-          : (isDark ? FontWeight.w600 : FontWeight.w500),
-      letterSpacing: showEnglish ? -0.28 : -0.06,
-      color: showEnglish ? secondaryReadable : mainReadable,
-      fontStyle: showEnglish ? FontStyle.italic : FontStyle.normal,
+      fontWeight: FontWeight.w500,
+      letterSpacing: -0.28,
+      color: secondaryReadable,
+      fontStyle: FontStyle.italic,
     );
+
+    final bodyStyle = showEnglish ? bodyStyleContentEn : bodyStyleKo;
 
     final Widget scriptWidget;
     if (koEnMixedSegments != null) {
@@ -1325,10 +1315,9 @@ class _AnnouncementScriptBlockState
             _buildScriptBody(
               context,
               seg.text,
-              seg.isLatin ? bodyStyleEn : bodyStyleKo,
+              seg.isLatin ? bodyStyleContentEn : bodyStyleKo,
               (r) => formattedDelayReason(r, english: seg.isLatin),
-              keepWordBoundaryOnlyOverride:
-                  !seg.isLatin,
+              keepWordBoundaryOnlyOverride: !seg.isLatin,
               preferInlineEnglishLabels: seg.isLatin,
             ),
           ],
@@ -1345,8 +1334,7 @@ class _AnnouncementScriptBlockState
 
     final showTimeRefresh = script.hasTimeToken == true;
 
-    final embeddedTitleTrim =
-        widget.pickOneEmbedded ? script.title.trim() : '';
+    final embeddedTitleTrim = widget.pickOneEmbedded ? script.title.trim() : '';
     if (widget.pickOneEmbedded &&
         embeddedTitleTrim.isEmpty &&
         script.isOptional &&
@@ -1382,8 +1370,8 @@ class _AnnouncementScriptBlockState
 
       final showGradientRequiredHeader =
           widget.presentTitleInRequired &&
-              requiredTitleText.isNotEmpty &&
-              !sharedBanner;
+          requiredTitleText.isNotEmpty &&
+          !sharedBanner;
 
       void accordionTap() {
         HapticFeedback.selectionClick();
@@ -1394,10 +1382,9 @@ class _AnnouncementScriptBlockState
         }
       }
 
-      final accordionChevronColor =
-          Theme.of(context).colorScheme.onSurface.withValues(
-                alpha: isDark ? 0.82 : 0.76,
-              );
+      final accordionChevronColor = Theme.of(
+        context,
+      ).colorScheme.onSurface.withValues(alpha: isDark ? 0.82 : 0.76);
 
       final Widget? gradientHeader = showGradientRequiredHeader
           ? _RequiredSectionTitleBar(
@@ -1408,8 +1395,9 @@ class _AnnouncementScriptBlockState
               emergencyPhaseLabel: widget.emergencyPhaseLabel,
               accordionMode: script.optionalStartsCollapsed,
               accordionExpanded: _effectiveOptionalExpanded,
-              onAccordionTap:
-                  script.optionalStartsCollapsed ? accordionTap : null,
+              onAccordionTap: script.optionalStartsCollapsed
+                  ? accordionTap
+                  : null,
               accordionChevronColor: accordionChevronColor,
             )
           : null;
@@ -1441,14 +1429,13 @@ class _AnnouncementScriptBlockState
                         requiredTitleText.isNotEmpty
                             ? requiredTitleText
                             : (showEnglish
-                                ? 'Tap to show script'
-                                : '탭하여 방송문 보기'),
+                                  ? 'Tap to show script'
+                                  : '탭하여 방송문 보기'),
                         style: titleStyle.copyWith(
                           fontWeight: requiredTitleText.isNotEmpty
                               ? FontWeight.w700
                               : FontWeight.w600,
-                          fontSize:
-                              requiredTitleText.isNotEmpty ? 17 : 13.5,
+                          fontSize: requiredTitleText.isNotEmpty ? 17 : 13.5,
                           fontStyle: requiredTitleText.isNotEmpty
                               ? titleStyle.fontStyle
                               : FontStyle.normal,
@@ -1494,13 +1481,12 @@ class _AnnouncementScriptBlockState
                     child: Text(
                       showEnglish ? 'Tap to show script' : '탭하여 방송문 보기',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            height: 1.35,
-                            color:
-                                Theme.of(context).colorScheme.onSurface.withValues(
-                                      alpha: 0.54,
-                                    ),
-                          ),
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.54),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1530,20 +1516,14 @@ class _AnnouncementScriptBlockState
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 9),
-                        scriptWidget,
-                      ],
+                      children: [const SizedBox(height: 9), scriptWidget],
                     )
                   : const SizedBox(width: double.infinity),
             )
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 9),
-                scriptWidget,
-              ],
+              children: [const SizedBox(height: 9), scriptWidget],
             );
 
       return Column(
@@ -1623,12 +1603,11 @@ class _AnnouncementScriptBlockState
               : UiConstants.navyMuted.withValues(alpha: 0.14));
 
     final optLeadAlpha = emergencyBoost ? (isDark ? 0.78 : 0.72) : 0.38;
-    final optTitleAlpha =
-        emergencyBoost ? (isDark ? 0.92 : 0.88) : (isDark ? 0.62 : 0.52);
-    final optPlaceholderAlpha =
-        emergencyBoost ? (isDark ? 0.84 : 0.8) : 0.46;
-    final optChevronAlpha =
-        emergencyBoost ? (isDark ? 0.82 : 0.76) : 0.4;
+    final optTitleAlpha = emergencyBoost
+        ? (isDark ? 0.92 : 0.88)
+        : (isDark ? 0.62 : 0.52);
+    final optPlaceholderAlpha = emergencyBoost ? (isDark ? 0.84 : 0.8) : 0.46;
+    final optChevronAlpha = emergencyBoost ? (isDark ? 0.82 : 0.76) : 0.4;
 
     /// 배지가 카드 상단 규선에 걸치도록 카드를 아래로 내린 만큼 + 배지가 위로 살짝 나옴.
     final optionalCardTopInset = widget.pickOneEmbedded ? 0.0 : 13.0;
@@ -1652,10 +1631,7 @@ class _AnnouncementScriptBlockState
     final badgeGradientTop = isDark
         ? const Color(0xFF232D3C)
         : UiConstants.warmSurface;
-    final badgeGradientBottom = Color.alphaBlend(
-      optionalFillMid,
-      badgeFill,
-    );
+    final badgeGradientBottom = Color.alphaBlend(optionalFillMid, badgeFill);
 
     Widget optionalBadge() {
       if (emergencyBoost) {
@@ -1678,10 +1654,7 @@ class _AnnouncementScriptBlockState
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              badgeGradientTop,
-              badgeGradientBottom,
-            ],
+            colors: [badgeGradientTop, badgeGradientBottom],
             stops: const [0.15, 1.0],
           ),
           borderRadius: BorderRadius.circular(999),
@@ -1701,14 +1674,14 @@ class _AnnouncementScriptBlockState
           child: Text(
             optionalLabel,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontSize: 10.8,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.06,
-                  height: 1.15,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.62)
-                      : UiConstants.navyMuted.withValues(alpha: 0.72),
-                ),
+              fontSize: 10.8,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.06,
+              height: 1.15,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.62)
+                  : UiConstants.navyMuted.withValues(alpha: 0.72),
+            ),
           ),
         ),
       );
@@ -1734,7 +1707,8 @@ class _AnnouncementScriptBlockState
             ),
           );
 
-    final showOptionalHeader = titleText.isNotEmpty ||
+    final showOptionalHeader =
+        titleText.isNotEmpty ||
         showTimeRefresh ||
         script.optionalStartsCollapsed;
 
@@ -1745,16 +1719,15 @@ class _AnnouncementScriptBlockState
             height: 1.35,
             letterSpacing: showEnglish ? -0.28 : -0.06,
             color: mainReadable.withValues(alpha: optTitleAlpha),
-            fontStyle:
-                showEnglish ? FontStyle.italic : FontStyle.normal,
+            fontStyle: showEnglish ? FontStyle.italic : FontStyle.normal,
           )
         : Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              height: 1.35,
-              letterSpacing: -0.28,
-              color: mainReadable.withValues(alpha: optTitleAlpha),
-            );
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            height: 1.35,
+            letterSpacing: -0.28,
+            color: mainReadable.withValues(alpha: optTitleAlpha),
+          );
 
     final TextStyle? optionalPlaceholderStyle = emergencyBoost
         ? TextStyle(
@@ -1764,11 +1737,11 @@ class _AnnouncementScriptBlockState
             color: mainReadable.withValues(alpha: optPlaceholderAlpha),
           )
         : Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              height: 1.35,
-              color: mainReadable.withValues(alpha: optPlaceholderAlpha),
-            );
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
+            height: 1.35,
+            color: mainReadable.withValues(alpha: optPlaceholderAlpha),
+          );
 
     final headerRowCore = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1780,10 +1753,10 @@ class _AnnouncementScriptBlockState
             child: _OptionalTitleLeadingIcon(
               useCollapsedCue: script.optionalStartsCollapsed,
               color: mainReadable.withValues(alpha: optLeadAlpha),
-              emergencyPhaseLabel:
-                  emergencyBoost ? widget.emergencyPhaseLabel : null,
-              emergencyOrderForIcon:
-                  emergencyBoost ? script.order : null,
+              emergencyPhaseLabel: emergencyBoost
+                  ? widget.emergencyPhaseLabel
+                  : null,
+              emergencyOrderForIcon: emergencyBoost ? script.order : null,
             ),
           ),
           const SizedBox(width: 8),
@@ -1792,10 +1765,7 @@ class _AnnouncementScriptBlockState
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(right: emergencyTitleEndPad),
-              child: Text(
-                titleText,
-                style: optionalTitleStyle,
-              ),
+              child: Text(titleText, style: optionalTitleStyle),
             ),
           )
         else if (script.optionalStartsCollapsed)
@@ -1836,24 +1806,24 @@ class _AnnouncementScriptBlockState
     final Widget headerRow = !showOptionalHeader
         ? const SizedBox.shrink()
         : script.optionalStartsCollapsed
-            ? Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    if (_accordionControlled) {
-                      widget.pickOneAccordionHeaderTap!();
-                    } else {
-                      setState(() => _optionalExpanded = !_optionalExpanded);
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: headerRowCore,
-                  ),
-                ),
-              )
-            : headerRowCore;
+        ? Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                if (_accordionControlled) {
+                  widget.pickOneAccordionHeaderTap!();
+                } else {
+                  setState(() => _optionalExpanded = !_optionalExpanded);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: headerRowCore,
+              ),
+            ),
+          )
+        : headerRowCore;
 
     final optionalInnerColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1868,10 +1838,7 @@ class _AnnouncementScriptBlockState
                 ? Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 9),
-                      scriptWidget,
-                    ],
+                    children: [const SizedBox(height: 9), scriptWidget],
                   )
                 : const SizedBox(width: double.infinity),
           )
@@ -1899,8 +1866,7 @@ class _AnnouncementScriptBlockState
       // 헤더 줄의 ▼ 카바와 겹치지 않게 위로 올리고, 접힘 시 우측 여백 확보.
       final topPad = optShellOuterTop + optShellInnerPad.top - 14;
       final baseRight = optShellInnerPad.right;
-      final chevronClear =
-          script.optionalStartsCollapsed ? 28.0 : 0.0;
+      final chevronClear = script.optionalStartsCollapsed ? 28.0 : 0.0;
       return Stack(
         clipBehavior: Clip.none,
         children: [
@@ -1938,9 +1904,9 @@ class _AnnouncementScriptBlockState
 
   Widget _timeRefreshAction(BuildContext context) {
     final style = Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        );
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+    );
     return TextButton.icon(
       onPressed: widget.onTimeRefresh,
       icon: const Icon(Icons.refresh_rounded, size: 16),
@@ -2010,7 +1976,8 @@ class _AnnouncementScriptBlockState
 
     DelayReasonModel? effectiveValue;
     if (widget.delayReasons.isNotEmpty) {
-      effectiveValue = widget.selectedDelayReason != null &&
+      effectiveValue =
+          widget.selectedDelayReason != null &&
               widget.delayReasons.contains(widget.selectedDelayReason)
           ? widget.selectedDelayReason!
           : widget.delayReasons.first;
@@ -2157,9 +2124,7 @@ class _OptionalTitleLeadingIcon extends StatelessWidget {
       );
     }
     return Icon(
-      useCollapsedCue
-          ? Icons.unfold_more_rounded
-          : Icons.info_outline_rounded,
+      useCollapsedCue ? Icons.unfold_more_rounded : Icons.info_outline_rounded,
       size: 18,
       color: color,
     );
@@ -2202,10 +2167,9 @@ class _RequiredSectionTitleBar extends StatelessWidget {
         ? emergencyRequiredTitleIcon(phase, script.order)
         : Icons.campaign_rounded;
     final demoBadge = scriptEtcShowsDemoBadge(script.etcNote);
-    final hasAccordion =
-        accordionMode && onAccordionTap != null;
-    final chevronInk = accordionChevronColor ??
-        ink.withValues(alpha: isDark ? 0.78 : 0.72);
+    final hasAccordion = accordionMode && onAccordionTap != null;
+    final chevronInk =
+        accordionChevronColor ?? ink.withValues(alpha: isDark ? 0.78 : 0.72);
 
     final Widget bar = Container(
       width: double.infinity,
@@ -2262,11 +2226,7 @@ class _RequiredSectionTitleBar extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(9),
-              child: Icon(
-                headerIcon,
-                size: 20,
-                color: Colors.white,
-              ),
+              child: Icon(headerIcon, size: 20, color: Colors.white),
             ),
           ),
           const SizedBox(width: 12),
@@ -2348,10 +2308,7 @@ class _RequiredSectionTitleBar extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onAccordionTap,
-          child: bar,
-        ),
+        child: InkWell(onTap: onAccordionTap, child: bar),
       );
     }
     return bar;
