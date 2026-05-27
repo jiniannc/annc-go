@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/ui_constants.dart';
 import '../providers/situational_provider.dart';
 import 'liquid_glass_card.dart';
+import 'pressable_scale.dart';
 
 /// 홈 화면 하단 도크.
 ///
@@ -19,11 +20,15 @@ class QuickDock extends StatelessWidget {
     required this.onCategoryTap,
     required this.onQuickAccessTap,
     required this.onEmergencyTap,
+    this.onCategoryLongPress,
     this.quickAccessAnchorKey,
     this.highlightCategory,
   });
 
   final void Function(SituationalCategoryDef def) onCategoryTap;
+
+  /// 카테고리 탭 long-press — 미리보기 peek 시트.
+  final void Function(SituationalCategoryDef def)? onCategoryLongPress;
 
   /// Quick Access 미니 팝업을 띄울 때 호출 — anchor 위치 계산은 호출부에서
   /// [quickAccessAnchorKey] 로 GlobalKey 의 RenderBox 를 읽어 직접 처리.
@@ -75,6 +80,9 @@ class QuickDock extends StatelessWidget {
                   indicatorColor: UiConstants.goOrange,
                   showIndicator: highlightCategory == def.id,
                   onTap: () => onCategoryTap(def),
+                  onLongPress: onCategoryLongPress == null
+                      ? null
+                      : () => onCategoryLongPress!(def),
                 ),
               _DockTab(
                 key: quickAccessAnchorKey,
@@ -112,6 +120,7 @@ class _DockTab extends StatelessWidget {
     required this.labelColor,
     required this.indicatorColor,
     required this.onTap,
+    this.onLongPress,
     this.showIndicator = false,
     this.labelBold = false,
     this.emphasizeBackground = false,
@@ -123,6 +132,7 @@ class _DockTab extends StatelessWidget {
   final Color labelColor;
   final Color indicatorColor;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final bool showIndicator;
   final bool labelBold;
 
@@ -134,17 +144,25 @@ class _DockTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+      child: PressableScale(
+        // Dock 카테고리/Quick/Emergency 의 햅틱은 호출부(home_screen)에서 이미
+        // light/medium/heavy 로 분기해서 호출하므로 여기서는 중복 처리하지 않는다.
+        onTap: onTap,
+        onLongPress: onLongPress,
+        scaleDown: 0.94,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
             child: DecoratedBox(
+              // Quick Access 후광은 ripple/hover 영역과 동일한 사각형을 채워야
+              // 시각적으로 "눌리는 범위 = 빛나는 범위" 가 일치한다. 따라서
+              // 그라데이션은 InkWell 의 직접 자식으로 두고, 내부 패딩은
+              // 안쪽 Column 쪽으로 옮긴다.
               decoration: emphasizeBackground
                   ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       gradient: RadialGradient(
                         center: const Alignment(0, -0.2),
                         radius: 1.25,
@@ -162,9 +180,10 @@ class _DockTab extends StatelessWidget {
                     )
                   : const BoxDecoration(),
               child: Padding(
-                padding: emphasizeBackground
-                    ? const EdgeInsets.symmetric(horizontal: 2, vertical: 2)
-                    : EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: 8,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/google_sheet_urls.dart';
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/navigation/app_page_route.dart';
 import '../../../core/utils/google_sheet_link_converter.dart';
 import '../../../data/models/sync_sheet_links.dart';
 import '../../../data/models/aircraft_master_model.dart';
@@ -204,7 +205,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       Navigator.of(context).pop();
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        appSharedAxisRoute<void>(builder: (_) => const HomeScreen()),
       );
     }
   }

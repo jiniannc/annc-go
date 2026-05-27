@@ -9,6 +9,7 @@ import '../../../core/constants/ui_constants.dart';
 import '../../providers/announcement_provider.dart';
 import '../../widgets/announcement_script_block.dart';
 import '../../widgets/quick_modal_sheet_shell.dart';
+import '../../widgets/staggered_entrance.dart';
 
 /// 승무원 비상 안내 바텀시트 (`Emergency` 시트 기반).
 ///
@@ -163,12 +164,13 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, i) {
                         final seg = segments[i];
+                        final Widget segment;
                         if (_segmentIsCrosscheckCue(seg)) {
-                          return _EmergencyCrosscheckBand(
+                          segment = _EmergencyCrosscheckBand(
                             script: (seg as AnnouncementPhaseSingle).script,
                           );
-                        }
-                        return _EmergencySegmentGlassCard(
+                        } else {
+                          segment = _EmergencySegmentGlassCard(
                           isDark: isDark,
                           child: buildAnnouncementSegmentWidget(
                             seg,
@@ -212,6 +214,11 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                             emergencyPhaseLabel:
                                 effectivePhase ?? phases.first,
                           ),
+                        );
+                        }
+                        return StaggeredEntrance(
+                          index: i,
+                          child: segment,
                         );
                       },
                     ),

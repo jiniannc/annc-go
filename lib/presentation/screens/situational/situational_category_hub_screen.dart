@@ -15,6 +15,7 @@ import '../../providers/situational_quick_access_provider.dart';
 import '../../widgets/quick_access_mini_popup.dart';
 import '../../widgets/quick_dock.dart';
 import '../../widgets/situational_script_card.dart';
+import '../../widgets/staggered_entrance.dart';
 import '../emergency/emergency_screen.dart';
 
 /// [UiConstants.situationalNavy] 는 다크 배경에서 대비가 사라짐 — 허브 eyebrow·서브탭·검색 아이콘용.
@@ -953,8 +954,10 @@ class _SituationalCategoryHubScreenState
         ),
         itemCount: hits.length,
         separatorBuilder: (_, _) => const SizedBox(height: 9),
-        itemBuilder: (_, i) =>
-            _buildSearchHitTile(hits[i], queryTrim, isDark),
+        itemBuilder: (_, i) => StaggeredEntrance(
+          index: i,
+          child: _buildSearchHitTile(hits[i], queryTrim, isDark),
+        ),
       );
     }
 
@@ -1029,13 +1032,15 @@ class _SituationalCategoryHubScreenState
                 orderedForStripe,
                 isDark,
               );
-        return SituationalScriptCard(
-          key: _keyForScenario(s.id),
-          script: s,
-          accentColor: accent,
-          subCategoryStripeColor: stripeColor,
-          isExpanded: _expandedScriptId == s.id,
-          onExpansionChanged: (open) {
+        return StaggeredEntrance(
+          index: i,
+          child: SituationalScriptCard(
+            key: _keyForScenario(s.id),
+            script: s,
+            accentColor: accent,
+            subCategoryStripeColor: stripeColor,
+            isExpanded: _expandedScriptId == s.id,
+            onExpansionChanged: (open) {
             final fromProgrammaticLink =
                 open && _pendingLinkJumpId != null && s.id == _pendingLinkJumpId;
             setState(() {
@@ -1065,6 +1070,7 @@ class _SituationalCategoryHubScreenState
           backFromLinkTooltip: canPop
               ? '이전: ${_linkBackStack.last.returnLabel}'
               : null,
+          ),
         );
       },
     );

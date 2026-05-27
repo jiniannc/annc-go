@@ -1,6 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+/// 스플래시 인트로 Lottie → 홈 헤더 [StaticAnncLogo] 로 향하는 Hero 의
+/// 공통 `flightShuttleBuilder`.
+///
+/// flight 동안 항상 [StaticAnncLogo] 를 [FittedBox] 안에서 렌더링한다. 인트로
+/// Lottie 의 마지막 프레임과 StaticAnncLogo 첫 프레임이 동일한 브랜드마크라
+/// flight 시작 시 swap 이 인지되지 않고, FittedBox.contain 이 240×240 →
+/// 128×40 의 종횡비 차이를 흡수해 부드럽게 morphing 된다.
+Widget anncLogoFlightShuttle(
+  BuildContext flightContext,
+  Animation<double> animation,
+  HeroFlightDirection direction,
+  BuildContext fromHeroContext,
+  BuildContext toHeroContext,
+) {
+  return const FittedBox(
+    fit: BoxFit.contain,
+    child: StaticAnncLogo(height: 40),
+  );
+}
+
 /// [StaticLogo.json] 로고 — 파일명은 Static이나 화면에서는 **무한 루프** 재생 (스플래시 풀 애니메이션과 분리).
 ///
 /// 캔버스가 가로로 길어 [height]만 지정하고 폭은 Lottie 비율(450:140)에 맞춥니다.

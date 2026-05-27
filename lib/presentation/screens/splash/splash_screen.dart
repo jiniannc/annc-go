@@ -6,11 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/navigation/app_page_route.dart';
 import '../../../data/services/google_sheets_sync_service.dart';
 import '../../../domain/sync/sync_progress_snapshot.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../widgets/app_premium_background.dart';
+import '../../widgets/static_annc_logo.dart';
+import '../../widgets/sync_micro_progress_bar.dart';
 import '../home/home_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -23,8 +26,6 @@ class SplashScreen extends ConsumerStatefulWidget {
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _lottieController;
-  late final AnimationController _exitFadeController;
-  late final Animation<double> _exitOpacity;
   final Completer<void> _animationDone = Completer<void>();
   var _animationCompletionRegistered = false;
   var _bootstrapStarted = false;
@@ -33,13 +34,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
     _lottieController = AnimationController(vsync: this);
-    _exitFadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    );
-    _exitOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _exitFadeController, curve: Curves.easeOutCubic),
-    );
 
     _lottieController.addStatusListener(_onLottieStatus);
 
@@ -88,19 +82,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       return;
     }
 
-    await _exitFadeController.forward();
-    if (!mounted) {
-      return;
-    }
-
+    // 스플래시 자체 fade-out 은 제거 — SharedAxisTransition 이 페이지 레벨
+    // 페이드를 처리하고, 로고만 [Hero] 로 따로 *날아가도록* 한다. 이렇게 하면
+    // 배경·텍스트는 자연스럽게 fade through 되고 브랜드마크는 splash 중앙에서
+    // home 헤더 좌측까지 끊김 없이 이어진다.
     Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 420),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomeScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+      appSharedAxisRoute<void>(
+        builder: (_) => const HomeScreen(),
+        duration: const Duration(milliseconds: 520),
+        reverseDuration: const Duration(milliseconds: 360),
       ),
     );
   }
@@ -167,7 +157,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void dispose() {
     _lottieController.removeStatusListener(_onLottieStatus);
     _lottieController.dispose();
-    _exitFadeController.dispose();
     super.dispose();
   }
 
@@ -176,16 +165,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final progressListenable = ref.watch(syncProgressNotifierProvider);
 
     return Scaffold(
-      body: FadeTransition(
-        opacity: _exitOpacity,
-        child: Stack(
-          children: [
-            const _SplashBackground(),
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RepaintBoundary(
+      body: Stack(
+        children: [
+          const _SplashBackground(),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Hero 로 home 헤더 [StaticAnncLogo] 와 연결된다. flight 동안
+                // 공통 shuttle 이 *destination 로고* 를 FittedBox 안에서 렌더링
+                // 하기 때문에, 인트로 Lottie 마지막 프레임 → looped StaticLogo
+                // 첫 프레임의 swap 이 인지되지 않고 위치·크기만 매끄럽게 보간된다.
+                Hero(
+                  tag: 'annc-logo',
+                  flightShuttleBuilder: anncLogoFlightShuttle,
+                  child: RepaintBoundary(
                     child: SizedBox(
                       width: 240,
                       height: 240,
@@ -210,128 +204,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 22),
-                  ValueListenableBuilder<SyncProgressSnapshot>(
-                    valueListenable: progressListenable,
-                    builder: (context, snap, _) {
-                      return RepaintBoundary(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              snap.message,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.35,
-                                    letterSpacing: -0.15,
-                                    color: UiConstants.navyMuted.withValues(
-                                      alpha: 0.88,
-                                    ),
+                ),
+                const SizedBox(height: 22),
+                ValueListenableBuilder<SyncProgressSnapshot>(
+                  valueListenable: progressListenable,
+                  builder: (context, snap, _) {
+                    return RepaintBoundary(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            snap.message,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.35,
+                                  letterSpacing: -0.15,
+                                  color: UiConstants.navyMuted.withValues(
+                                    alpha: 0.88,
                                   ),
-                            ),
-                            const SizedBox(height: 10),
-                            _SplashMicroProgressBar(progress: snap.progress),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 가로 150px, 두께 2px, 글래시 배경 + 포인트 컬러 게이지 + 끝 Glow.
-class _SplashMicroProgressBar extends StatelessWidget {
-  const _SplashMicroProgressBar({required this.progress});
-
-  final double progress;
-
-  static const double _w = 150;
-  static const double _h = 2;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = progress.clamp(0.0, 1.0);
-    return SizedBox(
-      width: _w,
-      height: _h,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_h),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: _w,
-              height: _h,
-              color: Colors.white.withValues(alpha: 0.42),
-            ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: p),
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) {
-                  return SizedBox(
-                    width: _w * value,
-                    height: _h,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  UiConstants.goOrange.withValues(alpha: 0.72),
-                                  UiConstants.goOrange,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (value > 0.02)
-                          Positioned(
-                            right: -4,
-                            top: -5,
-                            child: IgnorePointer(
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: UiConstants.goOrange.withValues(
-                                        alpha: 0.65,
-                                      ),
-                                      blurRadius: 10,
-                                      spreadRadius: 0.2,
-                                    ),
-                                  ],
                                 ),
-                              ),
+                          ),
+                          const SizedBox(height: 10),
+                          Hero(
+                            tag: SyncMicroProgressBar.heroTag,
+                            flightShuttleBuilder: syncProgressHeroShuttle,
+                            child: SyncMicroProgressBar(
+                              progress: snap.progress,
                             ),
                           ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

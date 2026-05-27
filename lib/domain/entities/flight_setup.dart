@@ -52,9 +52,10 @@ class FlightSetup {
 
   String get fullFlightNumber => 'LJ$flightNumberDigits';
 
-  /// 숫자 편명만 영어로 읽는 힌트.
-  /// - 맨 앞·맨 뒤의 0 → `zero` (예: `290` → `two-nine-zero`)
-  /// - 가운데 끼인 0 → `o` (예: `201` → `two-o-one`, `902` → `nine-o-two`)
+  /// 숫자 편명만 영어로 읽는 힌트 (하이픈으로 각 음절 구분).
+  /// - 단독으로 **두 개의 비-0 숫자 사이**에 끼인 `0` → `o` (예: `201`→`two-o-one`, `902`→`nine-o-two`)
+  /// - 그 외 `0`(앞/뒤, 또는 다른 `0`과 붙은 자리) → `zero`
+  ///   (`300`→`three-zero-zero`, `001`→`zero-zero-one`, `100`→`one-zero-zero`).
   String get flightNumberPronunciationEn {
     final chars = [
       for (final ch in flightNumberDigits.split(''))
@@ -84,8 +85,12 @@ class FlightSetup {
         );
         continue;
       }
-      final atEnds = i == 0 || i == chars.length - 1;
-      parts.add(atEnds ? 'zero' : 'o');
+      final solitaryBetweenNonZeros =
+          i > 0 &&
+          i < chars.length - 1 &&
+          chars[i - 1] != '0' &&
+          chars[i + 1] != '0';
+      parts.add(solitaryBetweenNonZeros ? 'o' : 'zero');
     }
     return parts.where((p) => p.isNotEmpty).join('-');
   }

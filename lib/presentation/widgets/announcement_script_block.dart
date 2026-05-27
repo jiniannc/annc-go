@@ -1920,6 +1920,36 @@ class _AnnouncementScriptBlockState
     );
   }
 
+  /// 본문 long-press → 클립보드 복사 (승무원이 한 줄·한 블록을 빠르게 공유할 때).
+  Widget _wrapCopyableScriptBody(
+    BuildContext context,
+    String plainBody,
+    Widget child,
+  ) {
+    final text = plainBody.trim();
+    if (text.isEmpty) {
+      return child;
+    }
+    return Tooltip(
+      message: '길게 눌러 방송문 복사',
+      waitDuration: const Duration(milliseconds: 500),
+      child: GestureDetector(
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          Clipboard.setData(ClipboardData(text: text));
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            const SnackBar(
+              content: Text('방송문이 클립보드에 복사되었습니다'),
+              duration: Duration(milliseconds: 2000),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        child: child,
+      ),
+    );
+  }
+
   Widget _buildScriptBody(
     BuildContext context,
     String body,
@@ -1955,21 +1985,25 @@ class _AnnouncementScriptBlockState
     if (!workBody.contains(delaySentinel) &&
         !workBody.contains(inlineSentinel) &&
         !workBody.contains(specialFarewellInlineSentinel)) {
-      return Padding(
-        padding: EdgeInsets.zero,
-        child: Text.rich(
-          TextSpan(
-            children: [
-              ..._spansWithResolvedVariableEmphasis(
-                workBody,
-                bodyStyle,
-                keepWordBoundaryOnly: keepWordBoundaryOnly,
-              ),
-              const TextSpan(text: '\u200A'),
-            ],
+      return _wrapCopyableScriptBody(
+        context,
+        body,
+        Padding(
+          padding: EdgeInsets.zero,
+          child: Text.rich(
+            TextSpan(
+              children: [
+                ..._spansWithResolvedVariableEmphasis(
+                  workBody,
+                  bodyStyle,
+                  keepWordBoundaryOnly: keepWordBoundaryOnly,
+                ),
+                const TextSpan(text: '\u200A'),
+              ],
+            ),
+            strutStyle: _teleprompterStrutStyle(bodyStyle),
+            overflow: TextOverflow.visible,
           ),
-          strutStyle: _teleprompterStrutStyle(bodyStyle),
-          overflow: TextOverflow.visible,
         ),
       );
     }
@@ -2082,17 +2116,21 @@ class _AnnouncementScriptBlockState
       }
     }
 
-    return Padding(
-      padding: EdgeInsets.zero,
-      child: Text.rich(
-        TextSpan(
-          children: [
-            ...spanChildren,
-            const TextSpan(text: '\u200A'),
-          ],
+    return _wrapCopyableScriptBody(
+      context,
+      body,
+      Padding(
+        padding: EdgeInsets.zero,
+        child: Text.rich(
+          TextSpan(
+            children: [
+              ...spanChildren,
+              const TextSpan(text: '\u200A'),
+            ],
+          ),
+          strutStyle: _teleprompterStrutStyle(bodyStyle),
+          overflow: TextOverflow.visible,
         ),
-        strutStyle: _teleprompterStrutStyle(bodyStyle),
-        overflow: TextOverflow.visible,
       ),
     );
   }

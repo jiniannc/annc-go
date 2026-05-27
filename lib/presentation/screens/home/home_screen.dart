@@ -10,21 +10,23 @@ import 'package:just_audio/just_audio.dart';
 import '../../../core/constants/ui_constants.dart';
 import '../../../data/models/delay_reason_model.dart';
 import '../../../data/models/ui_control_model.dart';
-import '../../../domain/entities/announcement.dart';
 import '../../../domain/entities/flight_setup.dart';
 import '../../providers/announcement_provider.dart';
 import '../../providers/flight_setup_provider.dart';
 import '../../providers/theme_mode_provider.dart';
 import '../../widgets/announcement_script_block.dart';
 import '../../widgets/app_premium_background.dart';
+import '../../widgets/dock_category_peek_sheet.dart';
 import '../../widgets/static_annc_logo.dart';
 import '../../widgets/liquid_glass_card.dart';
 import '../../widgets/milestone_bar.dart';
+import '../../widgets/milestone_phase_picker_sheet.dart';
 import '../../widgets/phase_audio_ui.dart';
 import '../../widgets/phase_guidance_inline.dart';
 import '../../widgets/quick_access_mini_popup.dart';
 import '../../widgets/quick_dock.dart';
 import '../../widgets/quick_modal_sheet_shell.dart';
+import '../../widgets/sync_micro_progress_bar.dart';
 import '../../providers/situational_provider.dart';
 import '../emergency/emergency_screen.dart';
 import '../setup/setup_screen.dart';
@@ -35,7 +37,7 @@ import 'turbulence_screen.dart';
 const double _kHomeAppBarToolbarHeight = 64;
 
 /// 헤더(앱바) 하단과 마일스톤 바 상단 사이 간격.
-const double _kHomeBodyGapBelowAppBar = 6;
+const double _kHomeBodyGapBelowAppBar = 1;
 
 /// 전체화면(문안 카드 확장)일 때 상태바 살짝 아래부터 본문·종료 줄까지 두는 세로 여백.
 const double _kAnnouncementFsTopComfort = 14;
@@ -162,6 +164,58 @@ class _PendingFlightSetupShellState
 // 드롭다운·항공편 번호 hint·변수 강조 등 announcement 시트 공용 위젯은
 // `widgets/announcement_script_block.dart` 로 모두 이동했다. (Emergency 시트도
 // 같은 컴포넌트를 그대로 재사용.)
+
+/// 페이즈 [PageView] 한 페이지 — 카드·글래스·그림자가 함께 넘어가도록 분리했다.
+///
+/// 이전처럼 한 장의 글래스 안에서 본문만 슬라이드되면 패널이 고정된 느낌이 들어,
+/// 여기에서만 페이지마다 [LiquidGlassCard]를 둔다.
+class _RoutinePhaseCarouselPageShell extends StatelessWidget {
+  const _RoutinePhaseCarouselPageShell({
+    required this.controller,
+    required this.index,
+    required this.child,
+  });
+
+  final PageController controller;
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final page = controller.hasClients
+            ? controller.page ?? controller.initialPage.toDouble()
+            : controller.initialPage.toDouble();
+        final delta = index - page;
+        final bounded = delta.clamp(-1.35, 1.35).toDouble();
+        final yaw = bounded * -0.12; // Y축 '넘김'; 과하면 본문이 찌그러져 보임
+        final dAbs = bounded.abs().clamp(0.0, 1.35);
+        final scale = 1.0 - dAbs.clamp(0.0, 1.0) * 0.07;
+        final opacity = (1.0 - dAbs.clamp(0.0, 1.0) * 0.09).clamp(0.94, 1.0);
+
+        final mtx = Matrix4.identity()
+          ..setEntry(3, 2, 0.0012)
+          ..rotateY(yaw);
+
+        return Opacity(
+          opacity: opacity,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: mtx,
+            child: Transform.scale(
+              scale: scale.clamp(0.9, 1.0),
+              alignment: Alignment.center,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -293,8 +347,8 @@ Widget _phaseMilestoneConnectorRail(BuildContext context) {
   );
 }
 
-/// [MilestoneBar] 고정 높이(36) + 카드까지 간격 — 접힘 애니메이션 시 세로만 보간한다.
-const double _kApproxMilestoneBarRailHeight = 36 + 5;
+/// [MilestoneBar] 고정 높이 + 카드까지 간격 — 접힘 애니메이션 시 세로만 보간한다.
+const double _kApproxMilestoneBarRailHeight = kMilestoneBarHeight + 1;
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
@@ -444,6 +498,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!_phasePageController.hasClients) {
       return;
     }
+    if (_phasePageController.position.isScrollingNotifier.value) {
+      return;
+    }
 
     final selected =
         ref.read(selectedMilestoneProvider) ?? setup.milestones.first;
@@ -458,6 +515,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     _phasePageController.jumpToPage(idx);
+  }
+
+  void _animatePhasePageTo(int nextIndex, {required bool isScrubbing}) {
+    if (!_phasePageController.hasClients) {
+      return;
+    }
+    final current = _phasePageController.page ?? nextIndex.toDouble();
+    if ((current - nextIndex).abs() < 0.01) {
+      return;
+    }
+
+    final distance = math.max(1, (nextIndex - current).abs().ceil());
+    final durationMs = isScrubbing
+        ? (100 + distance * 28).clamp(100, 380)
+        : 320;
+
+    _phasePageController.animateToPage(
+      nextIndex,
+      duration: Duration(milliseconds: durationMs),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _refreshRoutineScriptTime() {
@@ -618,7 +696,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       },
                       child: Row(
                         children: [
-                          const StaticAnncLogo(height: 40),
+                          // Splash 의 인트로 Lottie 와 Hero 로 연결되어, 진입
+                          // 트랜지션 중 로고가 *splash 중앙 → home 헤더 좌측*
+                          // 으로 부드럽게 날아온다.
+                          Hero(
+                            tag: 'annc-logo',
+                            flightShuttleBuilder: anncLogoFlightShuttle,
+                            child: const StaticAnncLogo(height: 40),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: _FlightInfoStrip(
@@ -627,6 +712,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               destinationIata: destinationIata,
                               hlNoText: hlNoText,
                             ),
+                          ),
+                          // Splash Hero 목적지 — 보이는 게이지는 제거, 전환만 흡수한다.
+                          Hero(
+                            tag: SyncMicroProgressBar.heroTag,
+                            child: const SizedBox.shrink(),
                           ),
                         ],
                       ),
@@ -719,28 +809,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       selected: currentMilestone,
                                       audioReadyMilestones:
                                           audioReadyMilestones,
-                                      onSelect: (phase) {
-                                        HapticFeedback.selectionClick();
-                                        ref
-                                                .read(
-                                                  selectedMilestoneProvider
-                                                      .notifier,
-                                                )
-                                                .state =
-                                            phase;
-                                        final nextIndex = setup.milestones
-                                            .indexOf(phase);
-                                        if (nextIndex >= 0 &&
-                                            _phasePageController.hasClients) {
-                                          // 마일 스와이프 시 애니메이션히면 손가락에 본문이 따라오지 않음 — 즉시 전환.
-                                          _phasePageController.jumpToPage(
-                                            nextIndex,
-                                          );
-                                        }
-                                        setState(() => _showEnglish = false);
+                                      originIata: originIata,
+                                      destinationIata: destinationIata,
+                                      onLongPress: () {
+                                        _openMilestonePhasePicker(
+                                          context,
+                                          setup: setup,
+                                          selected: currentMilestone,
+                                          audioReadyMilestones:
+                                              audioReadyMilestones,
+                                        );
+                                      },
+                                      onSelect: (phase, {required isScrubbing}) {
+                                        _applyMilestoneSelection(
+                                          setup,
+                                          phase,
+                                          isScrubbing: isScrubbing,
+                                        );
                                       },
                                     ),
-                                    const SizedBox(height: 5),
+                                    const SizedBox(height: 1),
                                   ],
                                 ),
                               ),
@@ -772,17 +860,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 if (_showAudioOverlay)
                   PhaseAudioPlaybackOverlay(
-                  player: _audioPlayer,
-                  milestone: _overlayMilestone,
-                  isJp: _overlayIsJp,
-                  onClose: () {
-                    unawaited(_closeAudioOverlay());
-                  },
-                  onTogglePlayback: _togglePlayback,
-                  onSeekRelative: _seekRelative,
-                  onSeekTo: (position) => _audioPlayer.seek(position),
-                  formatDuration: _formatDuration,
-                ),
+                    player: _audioPlayer,
+                    milestone: _overlayMilestone,
+                    isJp: _overlayIsJp,
+                    onClose: () {
+                      unawaited(_closeAudioOverlay());
+                    },
+                    onTogglePlayback: _togglePlayback,
+                    onSeekRelative: _seekRelative,
+                    onSeekTo: (position) => _audioPlayer.seek(position),
+                    formatDuration: _formatDuration,
+                  ),
                 Opacity(
                   opacity: (1 - fsT).clamp(0.0, 1.0),
                   child: IgnorePointer(
@@ -809,6 +897,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   onCategoryTap: (def) {
                     HapticFeedback.lightImpact();
                     _openCategoryHub(context, def);
+                  },
+                  onCategoryLongPress: (def) {
+                    HapticFeedback.mediumImpact();
+                    showDockCategoryPeekSheet(
+                      context,
+                      ref,
+                      def,
+                      onOpenFull: () => _openCategoryHub(context, def),
+                    );
                   },
                   onQuickAccessTap: () {
                     HapticFeedback.mediumImpact();
@@ -843,285 +940,292 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     required double announcementFullscreenT,
   }) {
     final chromeT = announcementFullscreenT.clamp(0.0, 1.0);
-    return LiquidGlassCard(
-      borderRadius: cardRadius,
-      padding: cardPadding,
-      elevateStrength: liquidGlassElevate,
-      child: PageView.builder(
-        controller: _phasePageController,
-        itemCount: setup.milestones.length,
-        onPageChanged: (index) {
-          ref.read(selectedMilestoneProvider.notifier).state =
-              setup.milestones[index];
-          setState(() => _showEnglish = false);
-        },
-        itemBuilder: (_, index) {
-          final milestone = setup.milestones[index];
-          final phaseControls = ref.watch(
-            uiControlsByMilestoneProvider(milestone),
-          );
-          final scripts = ref.watch(
-            formattedRoutineScriptsByMilestoneProvider(milestone),
-          );
-          final phaseAudio =
-              ref
-                  .watch(phaseAudioForMilestoneProvider(milestone))
-                  .valueOrNull ??
-              const PhaseAudioClip();
-          final orderedScripts = [...scripts]
-            ..sort((a, b) => a.order.compareTo(b.order));
-          final phaseHasAnyEnglish = orderedScripts.any(
-            (s) => s.en.trim().isNotEmpty,
-          );
-          final visibleScripts = _showEnglish
-              ? orderedScripts.where((s) => s.en.trim().isNotEmpty).toList()
-              : orderedScripts;
-          final announcerGuides = collectGuidanceValues(
-            visibleScripts,
-            (s) => s.announcer,
-          );
-          final timingGuides = collectGuidanceValues(
-            visibleScripts,
-            (s) => s.timing,
-          );
-          final etcGuides = collectGuidanceValues(
-            visibleScripts,
-            (s) => s.etcNote,
-          );
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  if (_showEnglish) {
+    return PageView.builder(
+      clipBehavior: Clip.none,
+      controller: _phasePageController,
+      itemCount: setup.milestones.length,
+      onPageChanged: (index) {
+        ref.read(selectedMilestoneProvider.notifier).state =
+            setup.milestones[index];
+        setState(() => _showEnglish = false);
+      },
+      itemBuilder: (_, index) {
+        final milestone = setup.milestones[index];
+        final phaseControls = ref.watch(
+          uiControlsByMilestoneProvider(milestone),
+        );
+        final scripts = ref.watch(
+          formattedRoutineScriptsByMilestoneProvider(milestone),
+        );
+        final phaseAudio =
+            ref.watch(phaseAudioForMilestoneProvider(milestone)).valueOrNull ??
+            const PhaseAudioClip();
+        final orderedScripts = [...scripts]
+          ..sort((a, b) => a.order.compareTo(b.order));
+        final phaseHasAnyEnglish = orderedScripts.any(
+          (s) => s.en.trim().isNotEmpty,
+        );
+        final visibleScripts = _showEnglish
+            ? orderedScripts.where((s) => s.en.trim().isNotEmpty).toList()
+            : orderedScripts;
+        final announcerGuides = collectGuidanceValues(
+          visibleScripts,
+          (s) => s.announcer,
+        );
+        final timingGuides = collectGuidanceValues(
+          visibleScripts,
+          (s) => s.timing,
+        );
+        final etcGuides = collectGuidanceValues(
+          visibleScripts,
+          (s) => s.etcNote,
+        );
+        return _RoutinePhaseCarouselPageShell(
+          controller: _phasePageController,
+          index: index,
+          child: LiquidGlassCard(
+            borderRadius: cardRadius,
+            padding: cardPadding,
+            elevateStrength: liquidGlassElevate,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (_showEnglish) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _showEnglish = false);
+                      return;
+                    }
+                    if (!phaseHasAnyEnglish) {
+                      return;
+                    }
                     HapticFeedback.selectionClick();
-                    setState(() => _showEnglish = false);
-                    return;
-                  }
-                  if (!phaseHasAnyEnglish) {
-                    return;
-                  }
-                  HapticFeedback.selectionClick();
-                  setState(() => _showEnglish = true);
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onVerticalDragEnd: (details) {
-                        final v = details.primaryVelocity ?? 0;
-                        if (!_announcementFullscreen &&
-                            v < -_kAnnouncementFsFlingVelocity) {
-                          _setAnnouncementFullscreen(true);
-                        } else if (_announcementFullscreen &&
-                            v > _kAnnouncementFsFlingVelocity) {
-                          _setAnnouncementFullscreen(false);
-                        }
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            height: _kPhaseHeaderStripHeight,
-                            width: constraints.maxWidth,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Positioned.fill(
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      padding: EdgeInsets.only(
-                                        right: chromeT > 0.02 ? 52 : 12,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          _phaseStripTitleBlock(
-                                            context: context,
-                                            milestone: milestone,
-                                          ),
-                                          if (phaseControls.isNotEmpty) ...[
-                                            const SizedBox(width: 10),
-                                            _PhaseControlsBar(
-                                              showEnglish: _showEnglish,
-                                              controls: phaseControls,
-                                              onChanged: (key, value) {
-                                                HapticFeedback.selectionClick();
-                                                final next =
-                                                    Map<String, String>.from(
-                                                      ref.read(
-                                                        selectedControlValuesProvider,
-                                                      ),
-                                                    );
-                                                next[key] = value;
-                                                ref
-                                                        .read(
-                                                          selectedControlValuesProvider
-                                                              .notifier,
-                                                        )
-                                                        .state =
-                                                    next;
-                                              },
-                                            ),
-                                          ],
-                                          if (phaseAudio.hasAny) ...[
-                                            const SizedBox(width: 10),
-                                            PhaseAudioPillButtons(
-                                              hasJp: phaseAudio.hasJp,
-                                              hasCn: phaseAudio.hasCn,
-                                              activeTag: _playingAudioTag,
-                                              onPlayJp: () => _openAudioOverlay(
-                                                phaseAudio: phaseAudio,
-                                                isJp: true,
-                                                milestone: milestone,
-                                              ),
-                                              onPlayCn: () => _openAudioOverlay(
-                                                phaseAudio: phaseAudio,
-                                                isJp: false,
-                                                milestone: milestone,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  width: 52,
-                                  child: Center(
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        IgnorePointer(
-                                          ignoring: chromeT > 0.5,
-                                          child: Opacity(
-                                            opacity: (1 - chromeT).clamp(
-                                              0.0,
-                                              1.0,
-                                            ),
-                                            child:
-                                                _announcementFullscreenEnterIcon(
-                                                  context,
-                                                ),
-                                          ),
-                                        ),
-                                        IgnorePointer(
-                                          ignoring: chromeT < 0.5,
-                                          child: Opacity(
-                                            opacity: chromeT.clamp(0.0, 1.0),
-                                            child:
-                                                _announcementFullscreenExitIcon(
-                                                  context,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          _phaseMilestoneConnectorRail(context),
-                          if (announcerGuides.isNotEmpty ||
-                              timingGuides.isNotEmpty ||
-                              etcGuides.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            PhaseGuidanceInline(
-                              announcers: announcerGuides,
-                              timings: timingGuides,
-                              etcNotes: etcGuides,
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: NotificationListener<OverscrollNotification>(
-                        onNotification: (OverscrollNotification n) {
-                          if (!_announcementFullscreen ||
-                              n.dragDetails == null) {
-                            return false;
-                          }
-                          final atTop =
-                              n.metrics.pixels <= n.metrics.minScrollExtent + 1;
-                          if (atTop &&
-                              n.overscroll < -_kAnnouncementFsExitOverscroll) {
+                    setState(() => _showEnglish = true);
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onVerticalDragEnd: (details) {
+                          final v = details.primaryVelocity ?? 0;
+                          if (!_announcementFullscreen &&
+                              v < -_kAnnouncementFsFlingVelocity) {
+                            _setAnnouncementFullscreen(true);
+                          } else if (_announcementFullscreen &&
+                              v > _kAnnouncementFsFlingVelocity) {
                             _setAnnouncementFullscreen(false);
-                            return true;
                           }
-                          return false;
                         },
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (visibleScripts.isEmpty)
-                                  Text(
-                                    _showEnglish
-                                        ? '해당 Phase의 영어 방송문이 없습니다.'
-                                        : '해당 Phase의 방송문이 없습니다.',
-                                  )
-                                else
-                                  Builder(
-                                    builder: (context) {
-                                      final segments =
-                                          _buildRoutinePhaseSegments(
-                                            visibleScripts,
-                                          );
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          for (
-                                            var si = 0;
-                                            si < segments.length;
-                                            si++
-                                          ) ...[
-                                            _routineAnnouncementSegment(
-                                              segments[si],
-                                              delayReasons: delayReasons,
-                                              selectedReason: selectedReason,
-                                              specialFarewellLabels:
-                                                  specialFarewellOptions,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              height: _kPhaseHeaderStripHeight,
+                              width: constraints.maxWidth,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Positioned.fill(
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: EdgeInsets.only(
+                                          right: chromeT > 0.02 ? 52 : 12,
+                                        ),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _phaseStripTitleBlock(
+                                              context: context,
+                                              milestone: milestone,
                                             ),
-                                            if (si != segments.length - 1)
-                                              const SizedBox(height: 6),
+                                            if (phaseControls.isNotEmpty) ...[
+                                              const SizedBox(width: 10),
+                                              _PhaseControlsBar(
+                                                showEnglish: _showEnglish,
+                                                controls: phaseControls,
+                                                onChanged: (key, value) {
+                                                  HapticFeedback.selectionClick();
+                                                  final next =
+                                                      Map<String, String>.from(
+                                                        ref.read(
+                                                          selectedControlValuesProvider,
+                                                        ),
+                                                      );
+                                                  next[key] = value;
+                                                  ref
+                                                          .read(
+                                                            selectedControlValuesProvider
+                                                                .notifier,
+                                                          )
+                                                          .state =
+                                                      next;
+                                                },
+                                              ),
+                                            ],
+                                            if (phaseAudio.hasAny) ...[
+                                              const SizedBox(width: 10),
+                                              PhaseAudioPillButtons(
+                                                hasJp: phaseAudio.hasJp,
+                                                hasCn: phaseAudio.hasCn,
+                                                activeTag: _playingAudioTag,
+                                                onPlayJp: () =>
+                                                    _openAudioOverlay(
+                                                      phaseAudio: phaseAudio,
+                                                      isJp: true,
+                                                      milestone: milestone,
+                                                    ),
+                                                onPlayCn: () =>
+                                                    _openAudioOverlay(
+                                                      phaseAudio: phaseAudio,
+                                                      isJp: false,
+                                                      milestone: milestone,
+                                                    ),
+                                              ),
+                                            ],
                                           ],
-                                        ],
-                                      );
-                                    },
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                              ],
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    width: 52,
+                                    child: Center(
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          IgnorePointer(
+                                            ignoring: chromeT > 0.5,
+                                            child: Opacity(
+                                              opacity: (1 - chromeT).clamp(
+                                                0.0,
+                                                1.0,
+                                              ),
+                                              child:
+                                                  _announcementFullscreenEnterIcon(
+                                                    context,
+                                                  ),
+                                            ),
+                                          ),
+                                          IgnorePointer(
+                                            ignoring: chromeT < 0.5,
+                                            child: Opacity(
+                                              opacity: chromeT.clamp(0.0, 1.0),
+                                              child:
+                                                  _announcementFullscreenExitIcon(
+                                                    context,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _phaseMilestoneConnectorRail(context),
+                            if (announcerGuides.isNotEmpty ||
+                                timingGuides.isNotEmpty ||
+                                etcGuides.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              PhaseGuidanceInline(
+                                announcers: announcerGuides,
+                                timings: timingGuides,
+                                etcNotes: etcGuides,
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: NotificationListener<OverscrollNotification>(
+                          onNotification: (OverscrollNotification n) {
+                            if (!_announcementFullscreen ||
+                                n.dragDetails == null) {
+                              return false;
+                            }
+                            final atTop =
+                                n.metrics.pixels <=
+                                n.metrics.minScrollExtent + 1;
+                            if (atTop &&
+                                n.overscroll <
+                                    -_kAnnouncementFsExitOverscroll) {
+                              _setAnnouncementFullscreen(false);
+                              return true;
+                            }
+                            return false;
+                          },
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: BouncingScrollPhysics(),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.zero,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (visibleScripts.isEmpty)
+                                    Text(
+                                      _showEnglish
+                                          ? '해당 Phase의 영어 방송문이 없습니다.'
+                                          : '해당 Phase의 방송문이 없습니다.',
+                                    )
+                                  else
+                                    Builder(
+                                      builder: (context) {
+                                        final segments =
+                                            _buildRoutinePhaseSegments(
+                                              visibleScripts,
+                                            );
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            for (
+                                              var si = 0;
+                                              si < segments.length;
+                                              si++
+                                            ) ...[
+                                              _routineAnnouncementSegment(
+                                                segments[si],
+                                                delayReasons: delayReasons,
+                                                selectedReason: selectedReason,
+                                                specialFarewellLabels:
+                                                    specialFarewellOptions,
+                                              ),
+                                              if (si != segments.length - 1)
+                                                const SizedBox(height: 6),
+                                            ],
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1271,43 +1375,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await showFlightSetupBottomSheet(context);
   }
 
-  Future<void> _openQuickList(
-    BuildContext context,
-    String title,
-    List<Announcement> items,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(UiConstants.pagePadding),
-          child: LiquidGlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: UiConstants.sectionGap),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (_, index) {
-                      final item = items[index];
-                      return ListTile(
-                        minVerticalPadding: 10,
-                        title: Text(item.title),
-                        subtitle: Text(item.contentKR),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+  void _applyMilestoneSelection(
+    FlightSetup setup,
+    String phase, {
+    bool isScrubbing = false,
+  }) {
+    if (!isScrubbing) {
+      HapticFeedback.selectionClick();
+    }
+    ref.read(selectedMilestoneProvider.notifier).state = phase;
+    final nextIndex = setup.milestones.indexOf(phase);
+    if (nextIndex >= 0) {
+      _animatePhasePageTo(nextIndex, isScrubbing: isScrubbing);
+    }
+    setState(() => _showEnglish = false);
+  }
+
+  Future<void> _openMilestonePhasePicker(
+    BuildContext context, {
+    required FlightSetup setup,
+    required String? selected,
+    required Set<String> audioReadyMilestones,
+  }) {
+    return showMilestonePhasePickerSheet(
+      context,
+      milestones: setup.milestones,
+      selected: selected,
+      audioReadyMilestones: audioReadyMilestones,
+      onSelect: (phase) => _applyMilestoneSelection(setup, phase),
     );
   }
 
