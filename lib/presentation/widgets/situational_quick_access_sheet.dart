@@ -11,6 +11,7 @@ import '../../domain/entities/situational_script.dart';
 import '../../domain/services/situational_quick_access_resolver.dart';
 import '../providers/situational_provider.dart';
 import '../providers/situational_quick_access_provider.dart';
+import 'modal_sheet_drag_handle.dart';
 import 'quick_modal_sheet_shell.dart';
 
 /// 시나리오 바로가기: 키워드 그리드 → 시나리오 목록 → Situational 허브로 점프.
@@ -189,20 +190,19 @@ class _SituationalQuickAccessSheetBodyState
             ),
             child: SafeArea(
               top: false,
-              child: SizedBox(
-                height:
-                    MediaQuery.sizeOf(context).height *
-                    UiConstants.quickModalSheetBodyHeightFraction,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            UiConstants.pagePadding,
-                            8,
-                            8,
-                            4,
-                          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const ModalSheetDragHandle(
+                    padding: EdgeInsets.only(top: 8, bottom: 4),
+                  ),
+                  Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          UiConstants.pagePadding,
+                          0,
+                          8,
+                          4,
+                        ),
                           child: Row(
                             children: [
                               if (_pickedKeyword != null)
@@ -295,7 +295,6 @@ class _SituationalQuickAccessSheetBodyState
                 ),
               ),
             ),
-          ),
     );
   }
 }

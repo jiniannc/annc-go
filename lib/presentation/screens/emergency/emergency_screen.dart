@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/ui_constants.dart';
+import '../../../core/utils/emergency_required_title_icon.dart';
 import '../../providers/announcement_provider.dart';
 import '../../widgets/announcement_script_block.dart';
+import '../../widgets/modal_sheet_drag_handle.dart';
 import '../../widgets/quick_modal_sheet_shell.dart';
 import '../../widgets/staggered_entrance.dart';
 
@@ -30,7 +32,6 @@ class EmergencyScreen extends ConsumerStatefulWidget {
       sheetAnimationStyle: UiConstants.quickModalSheetAnimationStyle,
       builder: (sheetContext) {
         final viewInsets = MediaQuery.viewInsetsOf(sheetContext);
-        final screenH = MediaQuery.sizeOf(sheetContext).height;
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom),
           child: QuickModalSheetShell(
@@ -39,11 +40,7 @@ class EmergencyScreen extends ConsumerStatefulWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(UiConstants.quickModalSheetTopCornerRadius),
               ),
-              child: SizedBox(
-                height:
-                    screenH * UiConstants.quickModalSheetBodyHeightFraction,
-                child: const EmergencyScreen(),
-              ),
+              child: const EmergencyScreen(),
             ),
           ),
         );
@@ -125,6 +122,9 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             top: false,
             child: Column(
               children: [
+                const ModalSheetDragHandle(
+                  padding: EdgeInsets.only(top: 8, bottom: 4),
+                ),
                 _buildHeaderRow(context, isDark),
                 const SizedBox(height: 10),
                 if (phases.isEmpty)
@@ -151,6 +151,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                   const SizedBox(height: 12),
                   Expanded(
                     child: ListView.separated(
+                      key: ValueKey(effectivePhase),
                       physics: const BouncingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
@@ -280,20 +281,6 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.5,
                 color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '비상상황 기내방송',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.35,
-                color: ink,
               ),
             ),
           ),
@@ -727,7 +714,7 @@ class _SplitSide extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.crisis_alert_rounded,
+                emergencyPhaseToggleIcon(label),
                 size: 17,
                 color: isSelected
                     ? Colors.white.withValues(alpha: 0.95)

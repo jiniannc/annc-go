@@ -11,6 +11,7 @@ import '../../../domain/services/announcement_formatter.dart';
 import '../../providers/announcement_provider.dart';
 import '../../widgets/phase_audio_ui.dart';
 import '../../widgets/phase_guidance_inline.dart';
+import '../../widgets/modal_sheet_drag_handle.dart';
 import '../../widgets/pick_one_dashed_bridge.dart';
 
 bool _turbulenceScriptIsSelectPickCandidate(TeleprompterScript s) =>
@@ -410,7 +411,9 @@ class _TurbulenceScreenState extends ConsumerState<TurbulenceScreen>
                   top: false,
                   child: Column(
                     children: [
-                      const SizedBox(height: 6),
+                      const ModalSheetDragHandle(
+                        padding: EdgeInsets.only(top: 8, bottom: 4),
+                      ),
                       _TurbulenceAppBar(
                         phase: _current,
                         isDark: isDark,
@@ -888,20 +891,18 @@ class _TurbulenceSelectPickOneBlockState extends State<_TurbulenceSelectPickOneB
                                   color: mainReadable.withValues(alpha: 0.48),
                                 ),
                       ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2, right: 10),
-                            child: _PickOneOrdinalOrb(
-                              ordinal: i + 1,
-                              isDark: isDark,
-                            ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _PickOneOrdinalOrb(
+                            ordinal: i + 1,
+                            isDark: isDark,
                           ),
-                          Expanded(
-                            child: Container(
+                        ),
+                        Expanded(
+                          child: Container(
                               decoration: _turbulenceRequiredCardDecoration(
                                 isDark: isDark,
                                 cardBg: widget.cardBg,
@@ -918,7 +919,6 @@ class _TurbulenceSelectPickOneBlockState extends State<_TurbulenceSelectPickOneB
                           ),
                         ],
                       ),
-                    ),
                   ],
                 ],
               ),
@@ -1073,19 +1073,15 @@ class _PickOneOrdinalOrb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = Theme.of(context).colorScheme.onSurface;
-    return SizedBox(
-      width: 22,
-      child: Text(
-        '$ordinal.',
-        textAlign: TextAlign.right,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontSize: 11.25,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-              letterSpacing: -0.02,
-              color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
-            ),
-      ),
+    return Text(
+      '$ordinal.',
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            fontSize: 11.25,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+            letterSpacing: -0.02,
+            color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
+          ),
     );
   }
 }

@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../core/constants/ui_constants.dart';
 
-/// 시츄에이셔널 바로가기·터뷸런스 등 동일 기하의 빠른 모달 셸.
+/// Situational 허브·터뷸런스·비상 등 동일 기하의 빠른 모달 셸.
 ///
 /// 상단 [UiConstants.quickModalSheetTopReserveGap] 만큼은 탭 시 시트가 닫힌다.
-/// 그 아래 영역은 [child]가 채우며, 높이·모서리는 호출부에서 맞춘다.
+/// 그 아래 [child]가 화면 하단까지 채우며, 드래그 핸들·모서리는 [child] 내부에서 맞춘다.
 class QuickModalSheetShell extends StatelessWidget {
   const QuickModalSheetShell({
     super.key,

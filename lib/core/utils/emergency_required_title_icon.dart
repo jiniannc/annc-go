@@ -1,5 +1,22 @@
 import 'package:flutter/material.dart';
 
+/// Emergency Phase 토글(비상 착륙 / 비상 착수)용 아이콘.
+IconData emergencyPhaseToggleIcon(String phaseName) {
+  final p = phaseName.trim().toLowerCase();
+  final isDitching =
+      p.contains('착수') || p.contains('ditch') || p.contains('ditching');
+  final isLanding =
+      p.contains('착륙') || p.contains('land') || p.contains('landing');
+
+  if (isDitching) {
+    return Icons.waves_rounded;
+  }
+  if (isLanding && !isDitching) {
+    return Icons.flight_land_rounded;
+  }
+  return Icons.crisis_alert_rounded;
+}
+
 /// Emergency Phase명 + CSV `Order`에 따른 필수 구간 헤더 아이콘.
 ///
 /// Phase 라벨은 시트에 따라 조금 달라질 수 있으므로 부분 문자열로 구분한다.

@@ -14,6 +14,7 @@ import '../../providers/announcement_provider.dart';
 import '../../providers/flight_setup_provider.dart';
 import '../../providers/sync_provider.dart';
 import '../../widgets/liquid_glass_card.dart';
+import '../../widgets/modal_sheet_drag_handle.dart';
 import '../../widgets/sync_progress_panel.dart';
 import '../home/home_screen.dart';
 
@@ -724,6 +725,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const ModalSheetDragHandle(padding: EdgeInsets.only(top: 8, bottom: 4)),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -731,14 +733,36 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'FLIGHT SETUP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.8,
-                        color: UiConstants.goOrange.withValues(alpha: 0.92),
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: UiConstants.situationalOrange,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: UiConstants.situationalOrange
+                                    .withValues(alpha: 0.55),
+                                blurRadius: 6,
+                                spreadRadius: 0.5,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'FLIGHT SETUP',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.8,
+                            color: UiConstants.goOrange.withValues(alpha: 0.92),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -1306,6 +1330,42 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
+  Widget _aircraftMetaChip(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _fieldFill(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: scheme.outline.withValues(alpha: isDark ? 0.16 : 0.14),
+        ),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '$label ',
+              style: _labelStyle(context).copyWith(fontSize: 12),
+            ),
+            TextSpan(
+              text: value,
+              style: _valueStyle(context).copyWith(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _aircraftStatusPanel(
     BuildContext context, {
     required bool hlEntered,
@@ -1315,22 +1375,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       return const SizedBox.shrink();
     }
     final scheme = Theme.of(context).colorScheme;
-    if (aircraft != null) {
-      final onCard = scheme.onPrimaryContainer;
-      final muted = onCard.withValues(alpha: 0.78);
-      TextStyle labelStyle() => TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            height: 1.3,
-            color: muted,
-          );
-      TextStyle valueStyle() => TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            height: 1.35,
-            color: onCard,
-          );
+    final muted = scheme.onSurface.withValues(alpha: 0.62);
 
+    if (aircraft != null) {
       /// 원문·파싱값이 있을 때만 표시 (알 수 없음·빈 값은 생략)
       String? lifevestIfShown(AircraftMasterModel a) {
         final raw = a.lifevest.trim();
@@ -1344,133 +1391,60 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         };
       }
 
-      Widget row(String label, String value, {bool isLast = false}) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: isLast ? 0 : 6),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 92,
-                child: Text(label, style: labelStyle()),
-              ),
-              Expanded(
-                child: Text(value, style: valueStyle()),
-              ),
-            ],
+      final chips = <Widget>[];
+      final m = aircraft.model.trim();
+      if (m.isNotEmpty) {
+        chips.add(_aircraftMetaChip(context, label: '기종', value: m));
+      }
+      if (aircraft.hasFootrest) {
+        chips.add(_aircraftMetaChip(context, label: '풋레스트', value: '있음'));
+      }
+      if (aircraft.hasIsps) {
+        chips.add(_aircraftMetaChip(context, label: 'ISPS', value: '있음'));
+      }
+      if (aircraft.hasWifi) {
+        chips.add(_aircraftMetaChip(context, label: 'Wi-Fi', value: '있음'));
+      }
+      final lv = lifevestIfShown(aircraft);
+      if (lv != null) {
+        chips.add(_aircraftMetaChip(context, label: 'Life Vest', value: lv));
+      }
+
+      if (chips.isEmpty) {
+        return Text(
+          '마스터에 상세 스펙이 비어 있습니다.',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            height: 1.35,
+            color: muted,
           ),
         );
       }
 
-      final rows = <({String label, String value})>[];
-      final m = aircraft.model.trim();
-      if (m.isNotEmpty) {
-        rows.add((label: '기종', value: m));
-      }
-      if (aircraft.hasFootrest) {
-        rows.add((label: '풋레스트', value: '있음'));
-      }
-      if (aircraft.hasIsps) {
-        rows.add((label: 'ISPS', value: '있음'));
-      }
-      if (aircraft.hasWifi) {
-        rows.add((label: 'Wi-Fi', value: '있음'));
-      }
-      final lv = lifevestIfShown(aircraft);
-      if (lv != null) {
-        rows.add((label: 'Life Vest', value: lv));
-      }
-
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.primaryContainer.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(_fieldRadius),
-          border: Border.all(color: scheme.primary.withValues(alpha: 0.22)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.verified_outlined,
-                size: 22,
-                color: scheme.primary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: rows.isEmpty
-                    ? Text(
-                        '마스터에 상세 스펙이 비어 있습니다.',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.35,
-                          color: muted,
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (var i = 0; i < rows.length; i++)
-                            row(
-                              rows[i].label,
-                              rows[i].value,
-                              isLast: i == rows.length - 1,
-                            ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-        ),
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: chips,
       );
     }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.tertiaryContainer.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(_fieldRadius),
-        border: Border.all(color: scheme.tertiary.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              size: 22,
-              color: scheme.tertiary,
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline_rounded, size: 16, color: muted),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            '기재 정보를 찾지 못했습니다. HL 번호가 맞는지 확인해 주세요.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.38,
+              color: muted,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '기재 정보를 찾지 못했습니다',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      height: 1.34,
-                      color: scheme.onTertiaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'HL 번호가 맞는지 확인해 주세요.',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.38,
-                      color: scheme.onSurface.withValues(alpha: 0.72),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

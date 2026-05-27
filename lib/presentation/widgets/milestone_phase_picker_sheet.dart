@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/ui_constants.dart';
+import 'modal_sheet_drag_handle.dart';
 
 /// 마일스톤바 long-press 시 전체 phase 를 그리드로 보여주는 점프 시트.
 Future<void> showMilestonePhasePickerSheet(
@@ -48,35 +49,13 @@ Future<void> showMilestonePhasePickerSheet(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(sheetContext)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
+                      const ModalSheetDragHandle(
+                        padding: EdgeInsets.only(top: 2, bottom: 10),
                       ),
-                      const SizedBox(height: 14),
                       Text(
                         '방송 단계 바로가기',
                         style: Theme.of(sheetContext).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '루틴 방송 순서 중 원하는 단계로 즉시 이동합니다.',
-                        style: Theme.of(sheetContext).textTheme.bodySmall
-                            ?.copyWith(
-                              color: Theme.of(sheetContext)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.62),
-                            ),
                       ),
                       const SizedBox(height: 14),
                       Flexible(
@@ -197,7 +176,7 @@ class _PhaseChip extends StatelessWidget {
                     size: 14,
                     color: isSelected
                         ? Colors.white.withValues(alpha: 0.92)
-                        : const Color(0xFF5C88FF),
+                        : UiConstants.goOrange,
                   ),
                 ],
               ],

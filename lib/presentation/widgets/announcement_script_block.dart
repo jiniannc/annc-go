@@ -683,19 +683,17 @@ class _AnnouncementSelectPickOneGroupState
                 color: mainReadable.withValues(alpha: bridgeLabelAlpha),
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, right: 10),
-                  child: _RoutinePickOneOrdinalOrb(
-                    ordinal: i + 1,
-                    isDark: isDark,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: _RoutinePickOneOrdinalOrb(
+                  ordinal: i + 1,
+                  isDark: isDark,
                 ),
-                Expanded(
+              ),
+              Expanded(
                   child: Builder(
                     builder: (context) {
                       final hasTitle = filtered[i].title.trim().isNotEmpty;
@@ -733,7 +731,6 @@ class _AnnouncementSelectPickOneGroupState
                 ),
               ],
             ),
-          ),
         ],
       ],
     );
@@ -798,18 +795,14 @@ class _RoutinePickOneOrdinalOrb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = Theme.of(context).colorScheme.onSurface;
-    return SizedBox(
-      width: 22,
-      child: Text(
-        '$ordinal.',
-        textAlign: TextAlign.right,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontSize: 11.25,
-          fontWeight: FontWeight.w600,
-          height: 1.35,
-          letterSpacing: -0.02,
-          color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
-        ),
+    return Text(
+      '$ordinal.',
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontSize: 11.25,
+        fontWeight: FontWeight.w600,
+        height: 1.35,
+        letterSpacing: -0.02,
+        color: ink.withValues(alpha: isDark ? 0.38 : 0.42),
       ),
     );
   }
@@ -1261,15 +1254,10 @@ class _AnnouncementScriptBlockState
       );
     }
 
-    // 선택 언어만 채워진 행 지원(KO 또는 EN 하나만 적은 시트). Emergency 는 기본 KO.
-    late final String body;
+    // Content_KO / Content_EN 각 칸 독립 — 빈 칸은 해당 언어 본문에서만 생략.
     final koRaw = script.ko;
     final enRaw = script.en;
-    if (showEnglish) {
-      body = enRaw.trim().isNotEmpty ? enRaw : koRaw;
-    } else {
-      body = koRaw.trim().isNotEmpty ? koRaw : enRaw;
-    }
+    final body = showEnglish ? enRaw : koRaw;
     if (body.trim().isEmpty) {
       return const SizedBox.shrink();
     }

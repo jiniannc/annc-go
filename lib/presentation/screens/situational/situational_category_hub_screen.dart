@@ -14,6 +14,7 @@ import '../../providers/situational_provider.dart';
 import '../../providers/situational_quick_access_provider.dart';
 import '../../widgets/quick_access_mini_popup.dart';
 import '../../widgets/quick_dock.dart';
+import '../../widgets/modal_sheet_drag_handle.dart';
 import '../../widgets/situational_script_card.dart';
 import '../../widgets/staggered_entrance.dart';
 import '../emergency/emergency_screen.dart';
@@ -470,7 +471,7 @@ class _SituationalCategoryHubScreenState
     // 시트가 차지할 영역 — 홈의 로고 한 줄 정도만 살짝 보이도록 위쪽에 좁게
     // 여백을 둔다(status bar + 로고 높이 정도).
     final topInset = MediaQuery.viewPaddingOf(context).top;
-    final reservedTop = topInset + 56;
+    final reservedTop = topInset + UiConstants.quickModalSheetTopReserveGap;
 
     final surfaceTop = isDark
         ? const Color(0xFF1E2735).withValues(alpha: 0.86)
@@ -532,6 +533,9 @@ class _SituationalCategoryHubScreenState
                 bottom: false,
                 child: Column(
                   children: [
+                    const ModalSheetDragHandle(
+                      padding: EdgeInsets.only(top: 8, bottom: 4),
+                    ),
                     _buildHeader(pointAccent, onSurface),
                     const SizedBox(height: 7),
                     _buildSubTabs(subCategories, onSurface),
@@ -647,8 +651,8 @@ class _SituationalCategoryHubScreenState
                         switchOutCurve: Curves.easeInCubic,
                         child: Text(
                           _searchOpen
-                              ? 'SITUATIONAL · 검색'
-                              : 'SITUATIONAL · ${_def.caption}',
+                              ? 'ANNC II · 검색'
+                              : 'ANNC II · ${_def.caption}',
                           key: ValueKey<bool>(_searchOpen),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

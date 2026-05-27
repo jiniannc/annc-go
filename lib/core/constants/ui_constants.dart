@@ -9,11 +9,18 @@ class UiConstants {
   static const double cardRadius = 22;
   static const Duration softAnimation = Duration(milliseconds: 260);
 
-  /// 상단 안전영역 + 바깥 탭으로 닫기 영역 (방송문 바로가기·터뷸런스 공통).
-  static const double quickModalSheetTopReserveGap = 48;
+  /// 상단 안전영역 + 바깥 탭으로 닫기 영역 (Situational 허브·퀵 모달 공통).
+  static const double quickModalSheetTopReserveGap = 56;
 
-  /// 본문 패널 높이 = 화면 높이 × 이 값 (시츄에이셔널 바로가기와 동일).
-  static const double quickModalSheetBodyHeightFraction = 0.88;
+  /// [quickModalSheetTopReserveGap] 아래부터 화면 하단까지 — Situational 허브와 동일.
+  static double quickModalSheetBodyHeight(
+    BuildContext context, {
+    double? screenHeight,
+  }) {
+    final mq = MediaQuery.of(context);
+    final h = screenHeight ?? mq.size.height;
+    return h - mq.viewPadding.top - quickModalSheetTopReserveGap;
+  }
 
   /// 바텀시트 상단 코너 (두 모달 공통).
   static const double quickModalSheetTopCornerRadius = 28;

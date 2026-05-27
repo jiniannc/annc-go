@@ -60,30 +60,23 @@ Future<void> showFlightSetupBottomSheet(BuildContext context) {
     // 자동 핸들은 투명 배경·커스텀 클립과 겹쳐 시트 위로 떠 보일 수 있음 — [SetupScreen] 헤더 내부에서 그린다.
     showDragHandle: false,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.35),
+    sheetAnimationStyle: UiConstants.quickModalSheetAnimationStyle,
     builder: (sheetContext) {
       final mq = MediaQuery.of(sheetContext);
-      // 키보드 높이를 반영하지 않으면 고정 높이(화면 비율) 시트와 viewInsets 충돌로
-      // 하단 '저장' 버튼이 화면 중앙까지 떠 보인다(isScrollControlled + Stack).
-      final availAboveKb = mq.size.height - mq.viewInsets.bottom;
-      // Padding(bottom: 시트 높이)보다 크면 레이아웃이 깨진다 → 가용 높이의 비율만 사용
-      final sheetHeight = availAboveKb * 0.92;
       final surface = Theme.of(sheetContext).colorScheme.surface;
       return Padding(
         padding: EdgeInsets.only(bottom: mq.viewInsets.bottom),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: SizedBox(
-            height: sheetHeight,
-            width: double.infinity,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(22),
-              ),
-              child: Material(
-                color: surface,
-                clipBehavior: Clip.antiAlias,
-                child: const SetupScreen(),
-              ),
+        child: QuickModalSheetShell(
+          sheetContext: sheetContext,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(UiConstants.quickModalSheetTopCornerRadius),
+            ),
+            child: Material(
+              color: surface,
+              clipBehavior: Clip.antiAlias,
+              child: const SetupScreen(),
             ),
           ),
         ),
@@ -291,10 +284,11 @@ class _PhaseTitleMotionLeadingState extends State<_PhaseTitleMotionLeading>
   }
 }
 
-/// Phase 스트립: 미션 모션 + 제목.
+/// Phase 스트립: 미션 모션 + 제목 (+ MP3 있으면 스피커 표시).
 Widget _phaseStripTitleBlock({
   required BuildContext context,
   required String milestone,
+  bool hasPhaseAudio = false,
 }) {
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -317,6 +311,14 @@ Widget _phaseStripTitleBlock({
           height: 1.15,
         ),
       ),
+      if (hasPhaseAudio) ...[
+        const SizedBox(width: 6),
+        const Icon(
+          Icons.volume_up_rounded,
+          size: 18,
+          color: UiConstants.goOrange,
+        ),
+      ],
     ],
   );
 }
@@ -1044,6 +1046,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                             _phaseStripTitleBlock(
                                               context: context,
                                               milestone: milestone,
+                                              hasPhaseAudio: phaseAudio.hasAny,
                                             ),
                                             if (phaseControls.isNotEmpty) ...[
                                               const SizedBox(width: 10),
@@ -1345,7 +1348,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       sheetAnimationStyle: UiConstants.quickModalSheetAnimationStyle,
       builder: (sheetContext) {
         final viewInsets = MediaQuery.viewInsetsOf(sheetContext);
-        final screenH = MediaQuery.sizeOf(sheetContext).height;
         return Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom),
           child: QuickModalSheetShell(
@@ -1356,13 +1358,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   UiConstants.quickModalSheetTopCornerRadius,
                 ),
               ),
-              child: SizedBox(
-                height: screenH * UiConstants.quickModalSheetBodyHeightFraction,
-                child: Material(
-                  color: Colors.transparent,
-                  clipBehavior: Clip.antiAlias,
-                  child: const TurbulenceScreen(),
-                ),
+              child: Material(
+                color: Colors.transparent,
+                clipBehavior: Clip.antiAlias,
+                child: const TurbulenceScreen(),
               ),
             ),
           ),
@@ -1812,12 +1811,6 @@ class _FlightInfoStrip extends StatelessWidget {
       letterSpacing: 0.9,
       color: onSurface.withValues(alpha: 0.58),
     );
-    final hlValueStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-      fontSize: 16,
-      fontWeight: FontWeight.w800,
-      letterSpacing: -0.05,
-      color: onSurface.withValues(alpha: 0.92),
-    );
 
     /// '-' 는 placeholder — 공간만 먹고 의미 없으면 HL 행을 통째로 생략
     final hasHlNo =
@@ -1829,7 +1822,7 @@ class _FlightInfoStrip extends StatelessWidget {
       children: [
         Text('FLIGHT INFO', style: labelStyle),
         const SizedBox(width: 10),
-        // 노선 알약 우선 확보(HL은 Flexible + 말줄임으로 양보)
+        // 노선·HL 알약 — 동일 pill 톤
         Expanded(
           flex: 3,
           child: Align(
@@ -1848,26 +1841,79 @@ class _FlightInfoStrip extends StatelessWidget {
         ),
         if (hasHlNo) ...[
           const SizedBox(width: 14),
-          Flexible(
-            flex: 1,
-            child: Row(
-              children: [
-                Text('HL', style: labelStyle),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    hlNoText,
-                    style: hlValueStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                  ),
-                ),
-              ],
-            ),
+          Text('HL', style: labelStyle),
+          const SizedBox(width: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: _HlNoPill(hlNoText: hlNoText, isDark: isDark),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _FlightHeaderPill extends StatelessWidget {
+  const _FlightHeaderPill({
+    required this.isDark,
+    required this.child,
+  });
+
+  final bool isDark;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final fillColor = isDark
+        ? Colors.white.withValues(alpha: 0.07)
+        : Colors.white.withValues(alpha: 0.92);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: fillColor,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.32)
+                : primary.withValues(alpha: 0.14),
+            blurRadius: 12,
+            spreadRadius: -3,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _HlNoPill extends StatelessWidget {
+  const _HlNoPill({
+    required this.hlNoText,
+    required this.isDark,
+  });
+
+  final String hlNoText;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final valueStyle = TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.2,
+      color: onSurface.withValues(alpha: 0.92),
+      height: 1.1,
+    );
+
+    return _FlightHeaderPill(
+      isDark: isDark,
+      child: Text(hlNoText, style: valueStyle),
     );
   }
 }
@@ -1890,9 +1936,6 @@ class _FlightRoutePill extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final primary = Theme.of(context).colorScheme.primary;
 
-    final fillColor = isDark
-        ? Colors.white.withValues(alpha: 0.07)
-        : Colors.white.withValues(alpha: 0.92);
     final dividerColor = onSurface.withValues(alpha: isDark ? 0.22 : 0.18);
     final arrowColor = primary;
 
@@ -1911,22 +1954,8 @@ class _FlightRoutePill extends StatelessWidget {
       height: 1.1,
     );
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: fillColor,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.32)
-                : primary.withValues(alpha: 0.14),
-            blurRadius: 12,
-            spreadRadius: -3,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
+    return _FlightHeaderPill(
+      isDark: isDark,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

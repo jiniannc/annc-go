@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/constants/ui_constants.dart';
 import 'pressable_scale.dart';
 
 /// 마일스톤 바 — 스톤 간격은 원래대로 촘촘히, Phase 라벨만 선택 스톤 위 오버레이.
@@ -23,10 +24,10 @@ class MilestoneBar extends StatefulWidget {
   final void Function(String phase, {required bool isScrubbing}) onSelect;
   final VoidCallback? onLongPress;
 
-  /// 출발지 IATA (예: `ICN`). 비어 있으면 좌측 캡을 그리지 않는다.
+  /// 출발지 IATA — 비어 있지 않으면 좌측 DEP 캡을 그린다 (코드 텍스트는 헤더에 표시).
   final String? originIata;
 
-  /// 도착지 IATA (예: `NRT`). 비어 있으면 우측 캡을 그리지 않는다.
+  /// 도착지 IATA — 비어 있지 않으면 우측 ARR 캡을 그린다 (코드 텍스트는 헤더에 표시).
   final String? destinationIata;
 
   @override
@@ -35,15 +36,28 @@ class MilestoneBar extends StatefulWidget {
 
 const double _kStoneSize = 9.0;
 const double _kConnectorWidth = 14.0;
-const double _kLabelAreaHeight = 26.0;
+const double _kSpeechBubbleFontSize = 10.5;
+const double _kSpeechBubbleLineHeight = 1.15;
+const double _kSpeechBubbleVPadding = 6.0;
+const double _kSpeechTailHeight = 9.0;
+/// 말풍선(본문+꼬리) 전체가 스톤 위 라벨 영역 안에 들어가도록 — bottom 정렬.
+const double _kLabelAreaHeight =
+    _kSpeechBubbleVPadding +
+    _kSpeechBubbleFontSize * _kSpeechBubbleLineHeight +
+    _kSpeechBubbleVPadding +
+    _kSpeechTailHeight +
+    1.0;
 const double _kLabelStoneGap = 0.0;
 const double _kStoneRowHeight = 18.0;
 const double _kActiveStoneScale = 1.5;
 const double _kEndpointIconSize = 18.0;
-const double _kEndpointIataGap = 4.0;
 const double _kEndpointTagGap = 2.0;
 const double _kEndpointTagHeight = 11.0;
-const double _kSpeechTailHeight = 9.0;
+const double _kPastStoneScale = 0.88;
+
+enum _MilestoneStoneState { past, active, future }
+
+enum _ConnectorPhase { traversed, upcoming }
 
 /// 마일스톤바 전체 높이 (라벨 + 간격 + 스톤 + DEP/ARR 태그).
 const double kMilestoneBarHeight =
@@ -53,7 +67,8 @@ const double kMilestoneBarHeight =
     _kEndpointTagGap +
     _kEndpointTagHeight;
 
-class _MilestoneBarState extends State<MilestoneBar> {
+class _MilestoneBarState extends State<MilestoneBar>
+    with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final List<GlobalKey> _itemKeys = [];
   int? _trackingPointer;
@@ -61,9 +76,12 @@ class _MilestoneBarState extends State<MilestoneBar> {
   bool _isScrubbing = false;
   String? _dragPreviewPhase;
   int _lastActiveIndex = 0;
+  late final AnimationController _livePulseController;
+  late final Animation<double> _livePulse;
 
   static const _scrubAnimDuration = Duration(milliseconds: 140);
   static const _tapAnimDuration = Duration(milliseconds: 220);
+  static const _livePulseDuration = Duration(milliseconds: 2800);
 
   Duration get _animDuration =>
       _isScrubbing ? _scrubAnimDuration : _tapAnimDuration;
@@ -71,6 +89,14 @@ class _MilestoneBarState extends State<MilestoneBar> {
   @override
   void initState() {
     super.initState();
+    _livePulseController = AnimationController(
+      vsync: this,
+      duration: _livePulseDuration,
+    )..repeat(reverse: true);
+    _livePulse = CurvedAnimation(
+      parent: _livePulseController,
+      curve: Curves.easeInOut,
+    );
     _syncKeys();
     final idx = widget.milestones.indexOf(widget.selected ?? '');
     if (idx >= 0) {
@@ -109,27 +135,33 @@ class _MilestoneBarState extends State<MilestoneBar> {
     return count * _kStoneSize + (count - 1) * _kConnectorWidth;
   }
 
-  double _measureIataWidth(String code, TextStyle style) {
-    final tp = TextPainter(
-      text: TextSpan(text: code, style: style),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout();
-    final width = tp.width;
-    tp.dispose();
-    return width;
+  double _endpointColumnWidth() => _kEndpointIconSize;
+
+  bool _connectorBeforeStoneIsTraversed(int stoneIndex, int activeIndex) {
+    if (activeIndex < 0) {
+      return false;
+    }
+    return stoneIndex <= activeIndex;
   }
 
-  double _endpointColumnWidth(String iataCode) {
-    const iataStyle = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0.35,
-      height: 1.0,
-    );
-    return _measureIataWidth(iataCode, iataStyle) +
-        _kEndpointIataGap +
-        _kEndpointIconSize;
+  bool _connectorAfterLastStoneIsTraversed(int activeIndex, int milestoneCount) {
+    if (activeIndex < 0 || milestoneCount <= 0) {
+      return false;
+    }
+    return activeIndex >= milestoneCount - 1;
+  }
+
+  _MilestoneStoneState _stoneState(int index, int activeIndex) {
+    if (activeIndex < 0) {
+      return _MilestoneStoneState.future;
+    }
+    if (index < activeIndex) {
+      return _MilestoneStoneState.past;
+    }
+    if (index == activeIndex) {
+      return _MilestoneStoneState.active;
+    }
+    return _MilestoneStoneState.future;
   }
 
   double _trackWidth({
@@ -168,9 +200,9 @@ class _MilestoneBarState extends State<MilestoneBar> {
     final hasDestinationCap =
         destinationCap != null && destinationCap.isNotEmpty;
     final originWidth =
-        hasOriginCap ? _endpointColumnWidth(originCap) : 0.0;
+        hasOriginCap ? _endpointColumnWidth() : 0.0;
     final destinationWidth =
-        hasDestinationCap ? _endpointColumnWidth(destinationCap) : 0.0;
+        hasDestinationCap ? _endpointColumnWidth() : 0.0;
 
     final contentWidth = _trackWidth(
       milestoneCount: widget.milestones.length,
@@ -289,6 +321,7 @@ class _MilestoneBarState extends State<MilestoneBar> {
 
   @override
   void dispose() {
+    _livePulseController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -307,9 +340,9 @@ class _MilestoneBarState extends State<MilestoneBar> {
     final hasDestinationCap =
         destinationCap != null && destinationCap.isNotEmpty;
     final originWidth =
-        hasOriginCap ? _endpointColumnWidth(originCap) : 0.0;
+        hasOriginCap ? _endpointColumnWidth() : 0.0;
     final destinationWidth =
-        hasDestinationCap ? _endpointColumnWidth(destinationCap) : 0.0;
+        hasDestinationCap ? _endpointColumnWidth() : 0.0;
     final leadingWidth =
         hasOriginCap ? originWidth + _kConnectorWidth : 0.0;
     final trackWidth = _trackWidth(
@@ -361,9 +394,13 @@ class _MilestoneBarState extends State<MilestoneBar> {
                                   leadingWidth: leadingWidth,
                                 ),
                                 label: widget.milestones[activeIndex],
+                                hasAudio: widget.audioReadyMilestones.contains(
+                                  widget.milestones[activeIndex],
+                                ),
                                 slideDirection: slideDirection,
                                 animDuration: animDuration,
                                 isDark: isDark,
+                                livePulse: _livePulse,
                               ),
                           ],
                         ),
@@ -376,17 +413,28 @@ class _MilestoneBarState extends State<MilestoneBar> {
                         children: [
                           if (hasOriginCap) ...[
                             _RouteEndpointStoneColumn(
-                              iataCode: originCap,
                               tag: 'DEP',
                               isOrigin: true,
                               isDark: isDark,
                             ),
-                            _AlignedConnector(isDark: isDark),
+                            _AlignedConnector(
+                              isDark: isDark,
+                              phase: _connectorBeforeStoneIsTraversed(0, activeIndex)
+                                  ? _ConnectorPhase.traversed
+                                  : _ConnectorPhase.upcoming,
+                            ),
                           ],
                           for (var i = 0;
                               i < widget.milestones.length;
                               i++) ...[
-                            if (i > 0) _AlignedConnector(isDark: isDark),
+                            if (i > 0)
+                              _AlignedConnector(
+                                isDark: isDark,
+                                phase:
+                                    _connectorBeforeStoneIsTraversed(i, activeIndex)
+                                    ? _ConnectorPhase.traversed
+                                    : _ConnectorPhase.upcoming,
+                              ),
                             PressableScale(
                               key: _itemKeys[i],
                               onTap: () => widget.onSelect(
@@ -405,12 +453,12 @@ class _MilestoneBarState extends State<MilestoneBar> {
                                     height: _kStoneRowHeight,
                                     child: Center(
                                       child: _MilestoneStone(
-                                        isActive: i == activeIndex,
+                                        state: _stoneState(i, activeIndex),
                                         isDark: isDark,
-                                        hasAudio: widget
-                                            .audioReadyMilestones
-                                            .contains(widget.milestones[i]),
                                         animDuration: animDuration,
+                                        livePulse: i == activeIndex
+                                            ? _livePulse
+                                            : null,
                                       ),
                                     ),
                                   ),
@@ -423,9 +471,17 @@ class _MilestoneBarState extends State<MilestoneBar> {
                             ),
                           ],
                           if (hasDestinationCap) ...[
-                            _AlignedConnector(isDark: isDark),
+                            _AlignedConnector(
+                              isDark: isDark,
+                              phase:
+                                  _connectorAfterLastStoneIsTraversed(
+                                    activeIndex,
+                                    widget.milestones.length,
+                                  )
+                                  ? _ConnectorPhase.traversed
+                                  : _ConnectorPhase.upcoming,
+                            ),
                             _RouteEndpointStoneColumn(
-                              iataCode: destinationCap,
                               tag: 'ARR',
                               isOrigin: false,
                               isDark: isDark,
@@ -450,24 +506,28 @@ class _FloatingPhaseLabel extends StatelessWidget {
   const _FloatingPhaseLabel({
     required this.centerX,
     required this.label,
+    required this.hasAudio,
     required this.slideDirection,
     required this.animDuration,
     required this.isDark,
+    required this.livePulse,
   });
 
   final double centerX;
   final String label;
+  final bool hasAudio;
   final int slideDirection;
   final Duration animDuration;
   final bool isDark;
+  final Animation<double> livePulse;
 
   @override
   Widget build(BuildContext context) {
     final textStyle = TextStyle(
-      fontSize: 10.5,
+      fontSize: _kSpeechBubbleFontSize,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.05,
-      height: 1.15,
+      height: _kSpeechBubbleLineHeight,
       color: isDark ? Colors.white.withValues(alpha: 0.96) : const Color(0xFF2A4058),
     );
 
@@ -505,11 +565,35 @@ class _FloatingPhaseLabel extends StatelessWidget {
               ),
             );
           },
-          child: _PhaseSpeechBubble(
-            key: ValueKey(label),
-            label: label,
-            textStyle: textStyle,
-            isDark: isDark,
+          child: AnimatedBuilder(
+            animation: livePulse,
+            builder: (context, _) {
+              final t = livePulse.value;
+              return Transform.translate(
+                offset: Offset(0, -0.35 * t),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF67C88F).withValues(
+                          alpha: isDark ? 0.06 + 0.1 * t : 0.05 + 0.09 * t,
+                        ),
+                        blurRadius: 8 + 5 * t,
+                        spreadRadius: -1,
+                      ),
+                    ],
+                  ),
+                  child: _PhaseSpeechBubble(
+                    key: ValueKey('$label|$hasAudio'),
+                    label: label,
+                    textStyle: textStyle,
+                    isDark: isDark,
+                    hasAudio: hasAudio,
+                    livePulse: t,
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -523,32 +607,54 @@ class _PhaseSpeechBubble extends StatelessWidget {
     required this.label,
     required this.textStyle,
     required this.isDark,
+    required this.hasAudio,
+    this.livePulse = 0,
   });
 
   final String label;
   final TextStyle textStyle;
   final bool isDark;
+  final bool hasAudio;
+  final double livePulse;
 
   static const _bodyHPadding = 12.0;
-  static const _bodyVPadding = 6.0;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _UnifiedSpeechBubblePainter(isDark: isDark),
+      painter: _UnifiedSpeechBubblePainter(
+        isDark: isDark,
+        livePulse: livePulse,
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           _bodyHPadding,
-          _bodyVPadding,
+          _kSpeechBubbleVPadding,
           _bodyHPadding,
-          _bodyVPadding + _kSpeechTailHeight,
+          _kSpeechBubbleVPadding + _kSpeechTailHeight,
         ),
-        child: Text(
-          label,
-          maxLines: 1,
-          softWrap: false,
-          textAlign: TextAlign.center,
-          style: textStyle,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+                textAlign: TextAlign.center,
+                style: textStyle,
+              ),
+            ),
+            if (hasAudio) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.volume_up_rounded,
+                size: 12.5,
+                color: UiConstants.goOrange,
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -557,11 +663,14 @@ class _PhaseSpeechBubble extends StatelessWidget {
 
 /// 본체+꼬리를 하나의 경로로 그리는 말풍선 — iOS 툴팁 톤의 부드러운 곡선.
 class _UnifiedSpeechBubblePainter extends CustomPainter {
-  const _UnifiedSpeechBubblePainter({required this.isDark});
+  const _UnifiedSpeechBubblePainter({
+    required this.isDark,
+    this.livePulse = 0,
+  });
 
   final bool isDark;
+  final double livePulse;
 
-  static const _accentPastel = Color(0xFF67C88F);
   static const _radius = 12.0;
   static const _tailHalfWidth = 7.0;
 
@@ -610,143 +719,144 @@ class _UnifiedSpeechBubblePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final path = _bubblePath(size);
 
-    final fillTop = isDark
-        ? const Color(0xFF2A3848).withValues(alpha: 0.97)
-        : Colors.white;
-    final fillBottom = isDark
-        ? const Color(0xFF1E2A38).withValues(alpha: 0.95)
-        : const Color(0xFFF7FCFA);
+    final fillColor = isDark
+        ? const Color(0xFF243040).withValues(alpha: 0.96)
+        : Colors.white.withValues(alpha: 0.98);
+    final borderBase = isDark ? 0.55 : 0.75;
     final borderColor = isDark
-        ? const Color(0xFF9AD4B6).withValues(alpha: 0.52)
-        : const Color(0xFF8DD8B1).withValues(alpha: 0.72);
-    final glowColor = _accentPastel.withValues(alpha: isDark ? 0.22 : 0.18);
+        ? Color(0xFF9AD4B6).withValues(
+            alpha: borderBase * (0.76 + 0.24 * livePulse),
+          )
+        : Color(0xFF8DD8B1).withValues(
+            alpha: borderBase * (0.76 + 0.24 * livePulse),
+          );
 
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = glowColor
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
-    );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Colors.black.withValues(alpha: isDark ? 0.34 : 0.10)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-    );
-
-    canvas.save();
-    canvas.translate(0, 1.5);
-    canvas.drawPath(
-      path,
-      Paint()..color = Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
-    );
-    canvas.restore();
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [fillTop, fillBottom],
-        ).createShader(Offset.zero & size),
-    );
-
-    canvas.save();
-    canvas.clipPath(path);
-    final shine = Rect.fromLTWH(0, 0, size.width, size.height * 0.42);
-    canvas.drawRect(
-      shine,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: isDark ? 0.10 : 0.55),
-            Colors.white.withValues(alpha: 0),
-          ],
-        ).createShader(shine),
-    );
-    canvas.restore();
-
+    canvas.drawPath(path, Paint()..color = fillColor);
     canvas.drawPath(
       path,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0
+        ..strokeWidth = 0.85
         ..color = borderColor,
-    );
-
-    final cx = size.width / 2;
-    final tipY = size.height;
-    canvas.drawCircle(
-      Offset(cx, tipY),
-      1.6,
-      Paint()..color = _accentPastel.withValues(alpha: isDark ? 0.55 : 0.45),
     );
   }
 
   @override
   bool shouldRepaint(covariant _UnifiedSpeechBubblePainter oldDelegate) {
-    return oldDelegate.isDark != isDark;
+    return oldDelegate.isDark != isDark ||
+        oldDelegate.livePulse != livePulse;
   }
 }
 
 class _MilestoneStone extends StatelessWidget {
   const _MilestoneStone({
-    required this.isActive,
+    required this.state,
     required this.isDark,
-    required this.hasAudio,
     required this.animDuration,
+    this.livePulse,
   });
 
-  final bool isActive;
+  final _MilestoneStoneState state;
   final bool isDark;
-  final bool hasAudio;
   final Duration animDuration;
+  final Animation<double>? livePulse;
 
   static const _accentPastel = Color(0xFF67C88F);
+  static const _pastFill = Color(0xFF8BB89A);
+  static const _pastBorder = Color(0xFF8DD8B1);
+
+  Widget _activeStoneBody(double t) {
+    final glowPrimary = (isDark ? _accentPastel : const Color(0xFF67C88F))
+        .withValues(alpha: 0.28 + 0.14 * t);
+    final glowSecondary = (isDark ? _accentPastel : const Color(0xFF67C88F))
+        .withValues(alpha: 0.08 + 0.1 * t);
+
+    return Container(
+      width: _kStoneSize,
+      height: _kStoneSize,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF5DAF8A) : _accentPastel,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isDark
+              ? Color(0xFFB8E4CC).withValues(alpha: 0.62 + 0.18 * t)
+              : Color(0xFF8DD8B1).withValues(alpha: 0.68 + 0.2 * t),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: glowPrimary,
+            blurRadius: 6 + 4 * t,
+            spreadRadius: 0.2 + 0.35 * t,
+          ),
+          BoxShadow(
+            color: glowSecondary,
+            blurRadius: 12 + 5 * t,
+            spreadRadius: 0.1,
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Container(
+        width: 3.0,
+        height: 3.0,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.88 + 0.1 * t),
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (isActive) {
+    if (state == _MilestoneStoneState.active) {
+      final pulse = livePulse;
       return AnimatedScale(
         scale: _kActiveStoneScale,
+        duration: animDuration,
+        curve: Curves.easeOutCubic,
+        child: pulse == null
+            ? _activeStoneBody(0)
+            : AnimatedBuilder(
+                animation: pulse,
+                builder: (context, _) {
+                  final t = pulse.value;
+                  return Transform.scale(
+                    scale: 1.0 + 0.022 * t,
+                    child: _activeStoneBody(t),
+                  );
+                },
+              ),
+      );
+    }
+
+    if (state == _MilestoneStoneState.past) {
+      return AnimatedScale(
+        scale: _kPastStoneScale,
         duration: animDuration,
         curve: Curves.easeOutCubic,
         child: Container(
           width: _kStoneSize,
           height: _kStoneSize,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF5DAF8A) : _accentPastel,
+            color: isDark
+                ? _pastFill.withValues(alpha: 0.52)
+                : _pastFill.withValues(alpha: 0.68),
             shape: BoxShape.circle,
             border: Border.all(
               color: isDark
-                  ? const Color(0xFFB8E4CC).withValues(alpha: 0.7)
-                  : const Color(0xFF8DD8B1).withValues(alpha: 0.75),
+                  ? _pastBorder.withValues(alpha: 0.55)
+                  : _pastBorder.withValues(alpha: 0.72),
               width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (isDark ? _accentPastel : const Color(0xFF67C88F))
-                    .withValues(alpha: 0.38),
-                blurRadius: 8,
-                spreadRadius: 0.4,
-              ),
-              BoxShadow(
-                color: (isDark ? _accentPastel : const Color(0xFF67C88F))
-                    .withValues(alpha: 0.14),
-                blurRadius: 14,
-                spreadRadius: 0.2,
-              ),
-            ],
           ),
           alignment: Alignment.center,
           child: Container(
-            width: 3.0,
-            height: 3.0,
+            width: 2.8,
+            height: 2.8,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
+              color: Colors.white.withValues(alpha: isDark ? 0.88 : 0.92),
               shape: BoxShape.circle,
             ),
           ),
@@ -754,65 +864,75 @@ class _MilestoneStone extends StatelessWidget {
       );
     }
 
-    return Stack(
+    return Container(
+      width: _kStoneSize,
+      height: _kStoneSize,
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E2735).withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.55),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.22)
+              : const Color(0xFF9FB2C9).withValues(alpha: 0.85),
+          width: 1.1,
+        ),
+      ),
       alignment: Alignment.center,
-      children: [
-        Container(
-          width: _kStoneSize,
-          height: _kStoneSize,
-          decoration: BoxDecoration(
-            color: hasAudio
-                ? const Color(0xB88EB8FF)
-                : (isDark
-                      ? const Color(0xFFD8E5FB)
-                      : const Color(0xFF9FB2C9)),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: hasAudio
-                  ? const Color(0xFF5C88FF)
-                  : (isDark
-                        ? const Color(0x99FFFFFF)
-                        : const Color(0xFF6F88A5)),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: hasAudio
-                    ? const Color(0x665C88FF)
-                    : (isDark
-                          ? const Color(0x88A9C7FF)
-                          : const Color(0x4D9FB2C8)),
-                blurRadius: isDark ? 11 : 6,
-                spreadRadius: isDark ? 0.8 : 0.1,
-              ),
-            ],
-          ),
+      child: Container(
+        width: 3.0,
+        height: 3.0,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.28)
+              : const Color(0xFF9FB2C9).withValues(alpha: 0.55),
+          shape: BoxShape.circle,
         ),
-        Container(
-          width: 3.2,
-          height: 3.2,
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.96)
-                : const Color(0xFFEFF4FA),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _MilestoneConnector extends StatelessWidget {
-  const _MilestoneConnector({required this.isDark});
+  const _MilestoneConnector({
+    required this.isDark,
+    required this.phase,
+  });
 
   final bool isDark;
+  final _ConnectorPhase phase;
 
   @override
   Widget build(BuildContext context) {
+    if (phase == _ConnectorPhase.traversed) {
+      return Container(
+        width: _kConnectorWidth,
+        height: 1.6,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF5DAF8A).withValues(alpha: 0.45),
+                    const Color(0xFF67C88F).withValues(alpha: 0.72),
+                    const Color(0xFF5DAF8A).withValues(alpha: 0.45),
+                  ]
+                : [
+                    const Color(0xFF8DD8B1).withValues(alpha: 0.55),
+                    const Color(0xFF67C88F).withValues(alpha: 0.78),
+                    const Color(0xFF8DD8B1).withValues(alpha: 0.55),
+                  ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: _kConnectorWidth,
-      height: 1.4,
+      height: 1.2,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(2),
         gradient: LinearGradient(
@@ -820,14 +940,14 @@ class _MilestoneConnector extends StatelessWidget {
           end: Alignment.centerRight,
           colors: [
             isDark
-                ? Colors.white.withValues(alpha: 0.18)
-                : const Color(0xFFC9D4E2),
+                ? Colors.white.withValues(alpha: 0.1)
+                : const Color(0xFFD5DEE8),
             isDark
-                ? Colors.white.withValues(alpha: 0.42)
-                : const Color(0xFFB3C2D5),
+                ? Colors.white.withValues(alpha: 0.22)
+                : const Color(0xFFC5D1DE),
             isDark
-                ? Colors.white.withValues(alpha: 0.18)
-                : const Color(0xFFC9D4E2),
+                ? Colors.white.withValues(alpha: 0.1)
+                : const Color(0xFFD5DEE8),
           ],
         ),
       ),
@@ -837,29 +957,32 @@ class _MilestoneConnector extends StatelessWidget {
 
 /// 스톤 행 중앙에 맞춘 연결선.
 class _AlignedConnector extends StatelessWidget {
-  const _AlignedConnector({required this.isDark});
+  const _AlignedConnector({
+    required this.isDark,
+    required this.phase,
+  });
 
   final bool isDark;
+  final _ConnectorPhase phase;
 
   @override
   Widget build(BuildContext context) {
+    final lineHeight = phase == _ConnectorPhase.traversed ? 1.6 : 1.2;
     return Padding(
-      padding: EdgeInsets.only(top: (_kStoneRowHeight - 1.4) / 2),
-      child: _MilestoneConnector(isDark: isDark),
+      padding: EdgeInsets.only(top: (_kStoneRowHeight - lineHeight) / 2),
+      child: _MilestoneConnector(isDark: isDark, phase: phase),
     );
   }
 }
 
-/// 출발/도착 아이콘이 스톤 역할 — IATA는 옆, DEP/ARR은 하단.
+/// 출발/도착 아이콘 — DEP/ARR 태그만 (IATA는 헤더에 표시).
 class _RouteEndpointStoneColumn extends StatelessWidget {
   const _RouteEndpointStoneColumn({
-    required this.iataCode,
     required this.tag,
     required this.isOrigin,
     required this.isDark,
   });
 
-  final String iataCode;
   final String tag;
   final bool isOrigin;
   final bool isDark;
@@ -874,15 +997,6 @@ class _RouteEndpointStoneColumn extends StatelessWidget {
         ? Icons.flight_takeoff_rounded
         : Icons.flight_land_rounded;
 
-    final iataStyle = TextStyle(
-      fontSize: 10,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 0.35,
-      height: 1.0,
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.88)
-          : const Color(0xFF2A4058),
-    );
     final tagStyle = TextStyle(
       fontSize: 7.5,
       fontWeight: FontWeight.w800,
@@ -928,26 +1042,11 @@ class _RouteEndpointStoneColumn extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment:
-          isOrigin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
           height: _kStoneRowHeight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: isOrigin
-                ? [
-                    Text(iataCode, style: iataStyle),
-                    const SizedBox(width: _kEndpointIataGap),
-                    iconStone,
-                  ]
-                : [
-                    iconStone,
-                    const SizedBox(width: _kEndpointIataGap),
-                    Text(iataCode, style: iataStyle),
-                  ],
-          ),
+          child: Center(child: iconStone),
         ),
         const SizedBox(height: _kEndpointTagGap),
         Text(

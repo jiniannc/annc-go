@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/ui_constants.dart';
+import 'modal_sheet_drag_handle.dart';
 import '../providers/situational_provider.dart';
 
 /// 도크 카테고리 long-press 시 뜨는 1/3 높이 미리보기 시트.
@@ -45,20 +46,9 @@ Future<void> showDockCategoryPeekSheet(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(sheetContext)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
+                      const ModalSheetDragHandle(
+                        padding: EdgeInsets.only(top: 4, bottom: 12),
                       ),
-                      const SizedBox(height: 18),
                       Row(
                         children: [
                           Container(
